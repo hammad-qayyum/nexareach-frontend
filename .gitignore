@@ -40,3 +40,7 @@ playwright-report/
 !deploy/dev/*.sql
 *.dump
 backups/
+
+# Misc
+*.pem
+coverage/
