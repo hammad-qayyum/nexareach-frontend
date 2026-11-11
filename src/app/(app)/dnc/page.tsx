@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { DncView } from "./dnc-view";
 
 export const metadata: Metadata = { title: "Do not contact" };
 
-export default function Page() {
-  return <ComingSoon href="/dnc" />;
+export default function DncPage() {
+  return <DncView />;
 }

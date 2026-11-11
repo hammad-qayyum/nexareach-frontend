@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { GroupsView } from "./groups-view";
 
 export const metadata: Metadata = { title: "Groups" };
 
-export default function Page() {
-  return <ComingSoon href="/leads/groups" />;
+export default function GroupsPage() {
+  return <GroupsView />;
 }

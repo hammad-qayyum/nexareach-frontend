@@ -31,7 +31,12 @@ Both use the `main` branch and are committed and pushed separately.
 
 **Not done:** the Impeccable design skill wasn't installed, so the UI uses a restrained shadcn base (neutral greys, one blue accent in `globals.css`). Install Impeccable and run its polish pass later (plan milestone 12). No automated frontend tests yet.
 
-**Next:** Milestone 2, Mailboxes (and the `/mailboxes`, `/dnc`, `/settings` pages). Later milestones add Tiptap (email editor) and Recharts (reports).
+**"Send today" slice: done** (cut-down milestones 2, 4, 6 and 7; see the backend CONTEXT.md for what the API does and doesn't do yet):
+- `/settings`: email footer. `/mailboxes`: add, edit, test connection, pause, delete if unused. `/dnc`: add emails or domains in bulk, search, remove.
+- `/leads/import`: pick or paste a CSV, parsed in the browser with papaparse (`columns.ts` guesses the mapping; other columns become `{{snake_case}}` fields), name the group, import, then jump to a new campaign for it. `/leads/groups` and `/leads/groups/[id]`: list, delete if unused, search leads.
+- `/campaigns`, `/campaigns/new`, `/campaigns/[id]`: one form (`campaign-form.tsx`) for create and edit (groups locked once started), click-to-insert variables, 3-version preview, pace and window with an estimate, test send, start/pause/resume/cancel, live progress (refreshes every 10 s while sending) and a recipients table showing the exact email sent.
+
+**Next:** the rest of milestone 2 and then verification (3). Later milestones add Tiptap (rich-text editor) and Recharts (reports).
 
 ## How the frontend is built
 

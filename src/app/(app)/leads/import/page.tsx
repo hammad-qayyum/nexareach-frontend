@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { ImportView } from "./import-view";
 
-export const metadata: Metadata = { title: "Import" };
+export const metadata: Metadata = { title: "Import leads" };
 
-export default function Page() {
-  return <ComingSoon href="/leads/import" />;
+export default function ImportPage() {
+  return <ImportView />;
 }

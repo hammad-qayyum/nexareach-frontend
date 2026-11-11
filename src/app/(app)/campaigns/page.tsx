@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { CampaignsView } from "./campaigns-view";
 
 export const metadata: Metadata = { title: "Campaigns" };
 
-export default function Page() {
-  return <ComingSoon href="/campaigns" />;
+export default function CampaignsPage() {
+  return <CampaignsView />;
 }

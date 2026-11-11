@@ -8,6 +8,16 @@ export type Role = Schemas["Role"];
 export type UserStatus = Schemas["UserStatus"];
 export type ActivityLog = Schemas["ActivityLogOut"];
 export type MfaState = Schemas["MeOut"]["mfa"];
+export type Mailbox = Schemas["MailboxOut"];
+export type SmtpSecurity = Schemas["MailboxOut"]["smtp_security"];
+export type MailboxStatus = Schemas["MailboxOut"]["status"];
+export type Group = Schemas["GroupOut"];
+export type Lead = Schemas["LeadOut"];
+export type Campaign = Schemas["CampaignOut"];
+export type CampaignStatus = Schemas["CampaignOut"]["status"];
+export type Recipient = Schemas["RecipientOut"];
+export type RecipientStatus = Schemas["RecipientOut"]["status"];
+export type DncEntry = Schemas["DncOut"];
 
 /** A failed API call. `code` is the backend's snake_case `detail` (e.g. "forbidden"). */
 export class ApiError extends Error {
