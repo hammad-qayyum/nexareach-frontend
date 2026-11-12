@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import type { Editor } from "@tiptap/react";
 import { EyeIcon, TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { RichEditor, textToHtml } from "@/components/rich-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type Campaign, type Schemas, unwrap } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -22,6 +25,8 @@ export type CampaignValues = {
   name: string;
   subject: string;
   body: string;
+  body_format: "TEXT" | "HTML";
+  use_lead_timezone: boolean;
   group_ids: number[];
   mailbox_ids: number[];
   gap_min_seconds: number;
@@ -68,6 +73,8 @@ function initialValues(c: Campaign | undefined, groupId: number | null): Campaig
     name: c?.name ?? "",
     subject: c?.subject ?? "",
     body: c?.body ?? DEFAULT_BODY,
+    body_format: c?.body_format ?? "TEXT",
+    use_lead_timezone: c?.use_lead_timezone ?? false,
     group_ids: c ? c.groups.map((g) => g.id) : groupId ? [groupId] : [],
     mailbox_ids: c ? c.mailboxes.map((m) => m.id) : [],
     gap_min_seconds: c?.gap_min_seconds ?? 300,
@@ -102,26 +109,41 @@ export function CampaignForm({
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const subjectRef = useRef<HTMLInputElement>(null);
   const lastFocused = useRef<"subject" | "body">("body");
+  const editorRef = useRef<Editor | null>(null);
 
   const groups = useQuery({ queryKey: ["groups"], queryFn: () => unwrap(api.GET("/api/groups")) });
   const mailboxes = useQuery({ queryKey: ["mailboxes"], queryFn: () => unwrap(api.GET("/api/mailboxes")) });
   const fields = useQuery({
     queryKey: ["campaign-fields", [...v.group_ids].sort()],
     queryFn: () =>
-      unwrap(api.POST("/api/campaigns/preview", { body: { subject: "", body: "", group_ids: v.group_ids } })),
+      unwrap(
+        api.POST("/api/campaigns/preview", {
+          body: { subject: "", body: "", body_format: "TEXT", group_ids: v.group_ids },
+        }),
+      ),
     select: (d) => d.available_fields,
   });
   const preview = useMutation({
     mutationFn: () =>
       unwrap(
         api.POST("/api/campaigns/preview", {
-          body: { subject: v.subject, body: v.body, group_ids: v.group_ids, mailbox_id: v.mailbox_ids[0] ?? null },
+          body: {
+            subject: v.subject,
+            body: v.body,
+            body_format: v.body_format,
+            group_ids: v.group_ids,
+            mailbox_id: v.mailbox_ids[0] ?? null,
+          },
         }),
       ),
   });
 
   function insertVariable(name: string) {
     const token = `{{${name}}}`;
+    if (lastFocused.current === "body" && v.body_format === "HTML" && editorRef.current) {
+      editorRef.current.chain().focus().insertContent(token).run();
+      return;
+    }
     const target = lastFocused.current === "subject" ? subjectRef.current : bodyRef.current;
     const key = lastFocused.current;
     if (!target) return;
@@ -133,6 +155,19 @@ export function CampaignForm({
       target.focus();
       target.setSelectionRange(start + token.length, start + token.length);
     });
+  }
+
+  function switchFormat(format: CampaignValues["body_format"]) {
+    if (format === v.body_format) return;
+    setV((s) => ({
+      ...s,
+      body_format: format,
+      body:
+        format === "HTML"
+          ? textToHtml(s.body)
+          : (editorRef.current?.getText({ blockSeparator: "\n\n" }) ?? s.body.replace(/<[^>]+>/g, "")),
+    }));
+    if (format === "TEXT") editorRef.current = null;
   }
 
   function toggle(key: "group_ids" | "mailbox_ids" | "send_days", id: number, on: boolean) {
@@ -199,6 +234,11 @@ export function CampaignForm({
                         disabled={paused}
                       />
                       <span className="flex-1">{g.name}</span>
+                      {g.pending_count > 0 && (
+                        <Link href="/leads/duplicates" className="text-xs text-muted-foreground underline underline-offset-4">
+                          +{g.pending_count} to review
+                        </Link>
+                      )}
                       <span className="text-xs text-muted-foreground tabular-nums">{g.lead_count.toLocaleString()}</span>
                     </Label>
                   ))
@@ -229,7 +269,7 @@ export function CampaignForm({
                       </span>
                       {m.status !== "ACTIVE" && (
                         <Badge variant="outline" className="font-normal">
-                          {m.status === "PAUSED" ? "Paused" : "Login failed"}
+                          {m.status === "PAUSED" ? "Paused" : "Not connected"}
                         </Badge>
                       )}
                     </Label>
@@ -256,7 +296,7 @@ export function CampaignForm({
         <CardHeader>
           <CardTitle>The email</CardTitle>
           <CardDescription>
-            Plain text. Click a field to insert it where the cursor is. Add a fallback after a bar:{" "}
+            Click a field to insert it where the cursor is. Add a fallback after a bar:{" "}
             <code className="font-mono text-xs">{"{{first_name|there}}"}</code>. Vary wording with{" "}
             <code className="font-mono text-xs">{"{Hi|Hello}"}</code>; each email picks one at random. The footer
             with your address is added automatically.
@@ -292,16 +332,40 @@ export function CampaignForm({
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="c-body">Message</FieldLabel>
-              <Textarea
-                id="c-body"
-                ref={bodyRef}
-                value={v.body}
-                onChange={(e) => set("body", e.target.value)}
-                onFocus={() => (lastFocused.current = "body")}
-                rows={12}
-                className="min-h-64 leading-relaxed"
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel htmlFor="c-body">Message</FieldLabel>
+                <Tabs value={v.body_format} onValueChange={(f) => switchFormat(f as CampaignValues["body_format"])}>
+                  <TabsList>
+                    <TabsTrigger value="TEXT">Plain text</TabsTrigger>
+                    <TabsTrigger value="HTML">Rich text</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              {v.body_format === "HTML" ? (
+                <RichEditor
+                  id="c-body"
+                  value={v.body}
+                  onChange={(html) => set("body", html)}
+                  onReady={(e) => (editorRef.current = e)}
+                  onFocus={() => (lastFocused.current = "body")}
+                  placeholder="Write your email…"
+                />
+              ) : (
+                <Textarea
+                  id="c-body"
+                  ref={bodyRef}
+                  value={v.body}
+                  onChange={(e) => set("body", e.target.value)}
+                  onFocus={() => (lastFocused.current = "body")}
+                  rows={12}
+                  className="min-h-64 leading-relaxed"
+                />
+              )}
+              <FieldDescription>
+                {v.body_format === "HTML"
+                  ? "Sent as formatted email with a plain-text copy for mail apps that prefer it. Keep it simple: plain emails land in inboxes more often."
+                  : "Plain text usually lands in the inbox most reliably."}
+              </FieldDescription>
             </Field>
             <div className="grid gap-3">
               <Button type="button" variant="outline" className="w-fit" onClick={() => preview.mutate()} disabled={preview.isPending}>
@@ -421,6 +485,20 @@ export function CampaignForm({
                 </Select>
               </Field>
             </div>
+            <Label className="flex items-start gap-2 font-normal">
+              <Checkbox
+                className="mt-0.5"
+                checked={v.use_lead_timezone}
+                onCheckedChange={(on) => set("use_lead_timezone", on === true)}
+              />
+              <span className="grid gap-0.5">
+                <span>Use each lead&apos;s own timezone</span>
+                <span className="text-xs text-muted-foreground">
+                  The days and hours above apply in each lead&apos;s local time, so everyone gets the email during
+                  their working day. Leads without a known timezone use {v.timezone.replace("_", " ")}.
+                </span>
+              </span>
+            </Label>
             {scheduleError ? (
               <p className="text-sm text-destructive">{scheduleError}</p>
             ) : (
@@ -489,10 +567,26 @@ function Preview({ data }: { data: Schemas["PreviewOut"] }) {
           <div key={i} className={cn("grid content-start gap-2 rounded-lg border bg-muted/30 p-3 text-sm")}>
             <span className="text-xs text-muted-foreground">Version {i + 1}</span>
             <p className="font-medium">{version.subject || "(no subject)"}</p>
-            <pre className="font-sans text-sm whitespace-pre-wrap">{version.body}</pre>
+            {version.html ? (
+              <EmailHtml html={version.html} />
+            ) : (
+              <pre className="font-sans text-sm whitespace-pre-wrap">{version.body}</pre>
+            )}
           </div>
         ))}
       </div>
     </div>
   );
+}
+
+/**
+ * A rendered HTML email, isolated in a sandboxed frame so nothing in it can run or touch the app.
+ * The server has already cleaned it; the sandbox is a second line of defence.
+ */
+export function EmailHtml({ html }: { html: string }) {
+  const doc = `<!doctype html><html><head><meta charset="utf-8"><style>
+    body{margin:0;font:14px/1.55 system-ui,-apple-system,sans-serif;color:#1f2328;background:#fff}
+    p{margin:0 0 .75em} ul,ol{margin:0 0 .75em;padding-left:1.25rem} a{color:#2f5bd3}
+  </style></head><body>${html}</body></html>`;
+  return <iframe title="Email preview" sandbox="" srcDoc={doc} className="h-72 w-full rounded-md border bg-white" />;
 }

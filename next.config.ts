@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const apiTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // A self-contained server bundle for the production Docker image.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {

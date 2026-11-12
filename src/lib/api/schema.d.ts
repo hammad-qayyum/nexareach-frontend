@@ -333,12 +333,55 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Mailbox */
+        /**
+         * Delete Mailbox
+         * @description Only for a mailbox that never sent an email and no running or paused campaign uses.
+         */
         delete: operations["delete_mailbox_api_mailboxes__mailbox_id__delete"];
         options?: never;
         head?: never;
         /** Update Mailbox */
         patch: operations["update_mailbox_api_mailboxes__mailbox_id__patch"];
+        trace?: never;
+    };
+    "/api/mailboxes/{mailbox_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Mailbox
+         * @description Hide a mailbox and stop it sending, keeping its history. Draft campaigns stop using it.
+         */
+        post: operations["archive_mailbox_api_mailboxes__mailbox_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mailboxes/{mailbox_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Mailbox
+         * @description Bring an archived mailbox back, paused. "Test and activate" makes it send again.
+         */
+        post: operations["restore_mailbox_api_mailboxes__mailbox_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/mailboxes/{mailbox_id}/check": {
@@ -352,7 +395,8 @@ export interface paths {
         put?: never;
         /**
          * Check Mailbox
-         * @description Log in to the SMTP server without sending anything.
+         * @description Log in to the SMTP (and IMAP) server without sending anything. Passing makes the mailbox
+         *     active again; failing stops it from sending. A paused mailbox stays paused.
          */
         post: operations["check_mailbox_api_mailboxes__mailbox_id__check_post"];
         delete?: never;
@@ -414,7 +458,8 @@ export interface paths {
         delete: operations["delete_group_api_groups__group_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Group */
+        patch: operations["update_group_api_groups__group_id__patch"];
         trace?: never;
     };
     "/api/groups/{group_id}/leads": {
@@ -427,7 +472,11 @@ export interface paths {
         /** List Group Leads */
         get: operations["list_group_leads_api_groups__group_id__leads_get"];
         put?: never;
-        post?: never;
+        /**
+         * Add Lead
+         * @description Add one lead by hand. An email already in the system waits on the Duplicates page, like an import.
+         */
+        post: operations["add_lead_api_groups__group_id__leads_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -447,13 +496,145 @@ export interface paths {
          * Import Group
          * @description Create a group from rows the browser has already parsed and mapped from a CSV file.
          *
-         *     An address already in the system keeps its existing lead (and its data) and joins this group too.
+         *     A row whose email already belongs to a lead (in the system, or earlier in this file) doesn't join
+         *     the group yet: it waits as a pending duplicate until someone decides keep new, old or both.
          */
         post: operations["import_group_api_groups_import_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{group_id}/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Group Facets
+         * @description Counts per email provider and per country, for the lead filters.
+         */
+        get: operations["group_facets_api_groups__group_id__facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{group_id}/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Lead
+         * @description Take a lead out of this group. The lead stays in the system and in its other groups.
+         */
+        delete: operations["remove_lead_api_groups__group_id__leads__lead_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/google-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch Google Sheet
+         * @description Download a Google Sheet shared as "anyone with the link" as CSV, for the import screen.
+         */
+        post: operations["fetch_google_sheet_api_groups_google_sheet_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Duplicates */
+        get: operations["list_duplicates_api_duplicates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/duplicates/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count Pending */
+        get: operations["count_pending_api_duplicates_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/duplicates/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Duplicates */
+        post: operations["resolve_duplicates_api_duplicates_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Lead
+         * @description Correct a lead's details. Its email can't change: add the new address as a new lead instead.
+         */
+        patch: operations["update_lead_api_leads__lead_id__patch"];
         trace?: never;
     };
     "/api/dnc": {
@@ -652,6 +833,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{campaign_id}/audience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audience
+         * @description The leads the campaign's groups hold now, with whether each has been left out.
+         */
+        get: operations["list_audience_api_campaigns__campaign_id__audience_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{campaign_id}/exclusions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Exclusions
+         * @description Leave leads out of (or put them back into) a draft campaign before it starts.
+         */
+        put: operations["set_exclusions_api_campaigns__campaign_id__exclusions_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -695,6 +916,37 @@ export interface components {
              */
             created_at: string;
         };
+        /** AddLeadOut */
+        AddLeadOut: {
+            /** Added */
+            added: boolean;
+            /** Pending Duplicate */
+            pending_duplicate: boolean;
+            lead: components["schemas"]["LeadOut"] | null;
+        };
+        /** AudienceLead */
+        AudienceLead: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string | null;
+            /** Company */
+            company: string | null;
+            /** Country */
+            country: string | null;
+            /** Timezone */
+            timezone: string | null;
+            email_provider: components["schemas"]["EmailProvider"] | null;
+            /** Excluded */
+            excluded: boolean;
+        };
+        /**
+         * BodyFormat
+         * @enum {string}
+         */
+        BodyFormat: "TEXT" | "HTML";
         /** CampaignIn */
         CampaignIn: {
             /**
@@ -724,6 +976,11 @@ export interface components {
              * @default 17
              */
             end_hour: number;
+            /**
+             * Use Lead Timezone
+             * @default false
+             */
+            use_lead_timezone: boolean;
             /** Name */
             name: string;
             /**
@@ -736,6 +993,8 @@ export interface components {
              * @default
              */
             body: string;
+            /** @default TEXT */
+            body_format: components["schemas"]["BodyFormat"];
             /** Group Ids */
             group_ids?: number[];
             /** Mailbox Ids */
@@ -752,6 +1011,7 @@ export interface components {
             subject: string;
             /** Body */
             body: string;
+            body_format: components["schemas"]["BodyFormat"];
             /** Groups */
             groups: components["schemas"]["GroupRef"][];
             /** Mailboxes */
@@ -768,6 +1028,10 @@ export interface components {
             start_hour: number;
             /** End Hour */
             end_hour: number;
+            /** Use Lead Timezone */
+            use_lead_timezone: boolean;
+            /** Excluded Count */
+            excluded_count: number;
             /** Started At */
             started_at: string | null;
             /** Finished At */
@@ -792,10 +1056,13 @@ export interface components {
             subject?: string | null;
             /** Body */
             body?: string | null;
+            body_format?: components["schemas"]["BodyFormat"] | null;
             /** Group Ids */
             group_ids?: number[] | null;
             /** Mailbox Ids */
             mailbox_ids?: number[] | null;
+            /** Use Lead Timezone */
+            use_lead_timezone?: boolean | null;
             /** Gap Min Seconds */
             gap_min_seconds?: number | null;
             /** Gap Max Seconds */
@@ -821,6 +1088,11 @@ export interface components {
             /** Code */
             code: string;
         };
+        /** CountOut */
+        CountOut: {
+            /** Pending */
+            pending: number;
+        };
         /** Counts */
         Counts: {
             /**
@@ -833,6 +1105,11 @@ export interface components {
              * @default 0
              */
             waiting: number;
+            /**
+             * Sending
+             * @default 0
+             */
+            sending: number;
             /**
              * Sent
              * @default 0
@@ -854,6 +1131,11 @@ export interface components {
              */
             cancelled: number;
         };
+        /**
+         * Decision
+         * @enum {string}
+         */
+        Decision: "KEEP_NEW" | "KEEP_OLD" | "KEEP_BOTH";
         /** DncAddIn */
         DncAddIn: {
             /** Entries */
@@ -890,6 +1172,88 @@ export interface components {
              */
             created_at: string;
         };
+        /** DuplicateOut */
+        DuplicateOut: {
+            /** Id */
+            id: number;
+            status: components["schemas"]["DuplicateStatus"];
+            group: components["schemas"]["GroupRef"];
+            /** Row Number */
+            row_number: number;
+            new: components["schemas"]["LeadData"];
+            existing: components["schemas"]["ExistingLead"];
+            /** Differences */
+            differences: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at: string | null;
+        };
+        /**
+         * DuplicateStatus
+         * @enum {string}
+         */
+        DuplicateStatus: "PENDING" | "KEPT_NEW" | "KEPT_OLD" | "KEPT_BOTH";
+        /**
+         * EmailProvider
+         * @enum {string}
+         */
+        EmailProvider: "GOOGLE" | "MICROSOFT" | "OTHER" | "UNKNOWN";
+        /** ExclusionsIn */
+        ExclusionsIn: {
+            /** Lead Ids */
+            lead_ids: number[];
+            /** Excluded */
+            excluded: boolean;
+        };
+        /** ExclusionsOut */
+        ExclusionsOut: {
+            /** Excluded Count */
+            excluded_count: number;
+        };
+        /** ExistingLead */
+        ExistingLead: {
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string | null;
+            /** Last Name */
+            last_name: string | null;
+            /** Company */
+            company: string | null;
+            /** Country */
+            country: string | null;
+            /** Timezone */
+            timezone: string | null;
+            /** Custom */
+            custom: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** FacetCount */
+        FacetCount: {
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
+        /** FacetsOut */
+        FacetsOut: {
+            /** Providers */
+            providers: components["schemas"]["FacetCount"][];
+            /** Countries */
+            countries: components["schemas"]["FacetCount"][];
+        };
         /** FooterSettings */
         FooterSettings: {
             /** Business Name */
@@ -907,6 +1271,8 @@ export interface components {
             source: string | null;
             /** Lead Count */
             lead_count: number;
+            /** Pending Count */
+            pending_count: number;
             /**
              * Created At
              * Format: date-time
@@ -919,6 +1285,13 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** GroupUpdateIn */
+        GroupUpdateIn: {
+            /** Name */
+            name?: string | null;
+            /** Source */
+            source?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -948,14 +1321,16 @@ export interface components {
             group: components["schemas"]["GroupOut"];
             /** Added */
             added: number;
-            /** Existing */
-            existing: number;
-            /** Duplicates In File */
-            duplicates_in_file: number;
+            /** Pending Duplicates */
+            pending_duplicates: number;
             /** Invalid Count */
             invalid_count: number;
             /** Invalid */
             invalid: components["schemas"]["InvalidRow"][];
+            /** Provider Mix */
+            provider_mix: {
+                [key: string]: number;
+            };
         };
         /** InvalidRow */
         InvalidRow: {
@@ -995,6 +1370,25 @@ export interface components {
             /** Invite Url */
             invite_url: string;
         };
+        /** LeadData */
+        LeadData: {
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string | null;
+            /** Last Name */
+            last_name: string | null;
+            /** Company */
+            company: string | null;
+            /** Country */
+            country: string | null;
+            /** Timezone */
+            timezone: string | null;
+            /** Custom */
+            custom: {
+                [key: string]: unknown;
+            };
+        };
         /** LeadOut */
         LeadOut: {
             /** Id */
@@ -1009,6 +1403,9 @@ export interface components {
             company: string | null;
             /** Country */
             country: string | null;
+            /** Timezone */
+            timezone: string | null;
+            email_provider: components["schemas"]["EmailProvider"] | null;
             /** Custom */
             custom: {
                 [key: string]: unknown;
@@ -1031,10 +1428,29 @@ export interface components {
             company?: string | null;
             /** Country */
             country?: string | null;
+            /** Timezone */
+            timezone?: string | null;
             /** Custom */
             custom?: {
                 [key: string]: string;
             };
+        };
+        /** LeadUpdateIn */
+        LeadUpdateIn: {
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Company */
+            company?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Custom */
+            custom?: {
+                [key: string]: string;
+            } | null;
         };
         /** LoginIn */
         LoginIn: {
@@ -1069,6 +1485,13 @@ export interface components {
             smtp_username: string;
             /** Smtp Password */
             smtp_password: string;
+            /** Imap Host */
+            imap_host?: string | null;
+            /**
+             * Imap Port
+             * @default 993
+             */
+            imap_port: number;
             /**
              * Daily Cap
              * @default 40
@@ -1090,6 +1513,12 @@ export interface components {
             smtp_security: components["schemas"]["SmtpSecurity"];
             /** Smtp Username */
             smtp_username: string;
+            /** Imap Host */
+            imap_host: string | null;
+            /** Imap Port */
+            imap_port: number;
+            /** Sent Folder */
+            sent_folder: string | null;
             /** Daily Cap */
             daily_cap: number;
             status: components["schemas"]["MailboxStatus"];
@@ -1104,6 +1533,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Archived At */
+            archived_at: string | null;
+            /** Can Delete */
+            can_delete: boolean;
+            connection?: components["schemas"]["CheckOut"] | null;
         };
         /** MailboxRef */
         MailboxRef: {
@@ -1135,6 +1569,10 @@ export interface components {
             smtp_username?: string | null;
             /** Smtp Password */
             smtp_password?: string | null;
+            /** Imap Host */
+            imap_host?: string | null;
+            /** Imap Port */
+            imap_port?: number | null;
             /** Daily Cap */
             daily_cap?: number | null;
             status?: components["schemas"]["MailboxStatus"] | null;
@@ -1155,10 +1593,24 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[AudienceLead] */
+        Page_AudienceLead_: {
+            /** Items */
+            items: components["schemas"]["AudienceLead"][];
+            /** Total */
+            total: number;
+        };
         /** Page[DncOut] */
         Page_DncOut_: {
             /** Items */
             items: components["schemas"]["DncOut"][];
+            /** Total */
+            total: number;
+        };
+        /** Page[DuplicateOut] */
+        Page_DuplicateOut_: {
+            /** Items */
+            items: components["schemas"]["DuplicateOut"][];
             /** Total */
             total: number;
         };
@@ -1188,6 +1640,8 @@ export interface components {
              * @default
              */
             body: string;
+            /** @default TEXT */
+            body_format: components["schemas"]["BodyFormat"];
             /** Group Ids */
             group_ids?: number[];
             /** Mailbox Id */
@@ -1210,6 +1664,8 @@ export interface components {
             subject: string;
             /** Body */
             body: string;
+            /** Html */
+            html: string | null;
         };
         /** RecipientOut */
         RecipientOut: {
@@ -1240,12 +1696,34 @@ export interface components {
             subject_sent: string | null;
             /** Body Sent */
             body_sent: string | null;
+            /** Html Sent */
+            html_sent: string | null;
+            /** Sent Copy Saved */
+            sent_copy_saved: boolean | null;
         };
         /**
          * RecipientStatus
          * @enum {string}
          */
-        RecipientStatus: "WAITING" | "SENT" | "FAILED" | "SKIPPED" | "CANCELLED";
+        RecipientStatus: "WAITING" | "SENDING" | "SENT" | "FAILED" | "SKIPPED" | "CANCELLED";
+        /** ResolveIn */
+        ResolveIn: {
+            decision: components["schemas"]["Decision"];
+            /** Ids */
+            ids?: number[];
+            /**
+             * All Pending
+             * @default false
+             */
+            all_pending: boolean;
+            /** Group Id */
+            group_id?: number | null;
+        };
+        /** ResolveOut */
+        ResolveOut: {
+            /** Resolved */
+            resolved: number;
+        };
         /**
          * Role
          * @enum {string}
@@ -1267,6 +1745,16 @@ export interface components {
             ok: boolean;
             /** Detail */
             detail: string;
+        };
+        /** SheetIn */
+        SheetIn: {
+            /** Url */
+            url: string;
+        };
+        /** SheetOut */
+        SheetOut: {
+            /** Csv */
+            csv: string;
         };
         /**
          * SmtpSecurity
@@ -1821,7 +2309,9 @@ export interface operations {
     };
     list_mailboxes_api_mailboxes_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_archived?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1835,6 +2325,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MailboxOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1915,6 +2414,68 @@ export interface operations {
                 "application/json": components["schemas"]["MailboxUpdateIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailboxOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_mailbox_api_mailboxes__mailbox_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailboxOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_mailbox_api_mailboxes__mailbox_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -2100,10 +2661,47 @@ export interface operations {
             };
         };
     };
+    update_group_api_groups__group_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_group_leads_api_groups__group_id__leads_get: {
         parameters: {
             query?: {
                 q?: string | null;
+                provider?: components["schemas"]["EmailProvider"] | null;
+                country?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -2122,6 +2720,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_LeadOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_lead_api_groups__group_id__leads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadRowIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddLeadOut"];
                 };
             };
             /** @description Validation Error */
@@ -2155,6 +2788,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    group_facets_api_groups__group_id__facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_lead_api_groups__group_id__leads__lead_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_google_sheet_api_groups_google_sheet_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SheetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_duplicates_api_duplicates_get: {
+        parameters: {
+            query?: {
+                status?: "pending" | "decided";
+                group_id?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_DuplicateOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_pending_api_duplicates_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountOut"];
+                };
+            };
+        };
+    };
+    resolve_duplicates_api_duplicates_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_api_leads__lead_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadOut"];
                 };
             };
             /** @description Validation Error */
@@ -2597,6 +3446,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_RecipientOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_audience_api_campaigns__campaign_id__audience_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                campaign_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AudienceLead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_exclusions_api_campaigns__campaign_id__exclusions_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExclusionsOut"];
                 };
             };
             /** @description Validation Error */

@@ -11,6 +11,7 @@ const CAMPAIGN: Record<CampaignStatus, { label: string; tone: Tone }> = {
 
 const RECIPIENT: Record<RecipientStatus, { label: string; tone: Tone }> = {
   WAITING: { label: "Waiting", tone: "muted" },
+  SENDING: { label: "Sending", tone: "info" },
   SENT: { label: "Sent", tone: "good" },
   FAILED: { label: "Failed", tone: "bad" },
   SKIPPED: { label: "Skipped", tone: "warn" },

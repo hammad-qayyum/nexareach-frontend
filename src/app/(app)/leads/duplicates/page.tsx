@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { DuplicatesView } from "./duplicates-view";
 
 export const metadata: Metadata = { title: "Duplicates" };
 
-export default function Page() {
-  return <ComingSoon href="/leads/duplicates" />;
+export default function DuplicatesPage() {
+  return <DuplicatesView />;
 }

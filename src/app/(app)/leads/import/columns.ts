@@ -1,4 +1,13 @@
-export type Target = "email" | "first_name" | "last_name" | "full_name" | "company" | "country" | "custom" | "ignore";
+export type Target =
+  | "email"
+  | "first_name"
+  | "last_name"
+  | "full_name"
+  | "company"
+  | "country"
+  | "timezone"
+  | "custom"
+  | "ignore";
 
 export const TARGET_LABELS: Record<Target, string> = {
   email: "Email",
@@ -7,6 +16,7 @@ export const TARGET_LABELS: Record<Target, string> = {
   full_name: "Full name (split into first and last)",
   company: "Company",
   country: "Country",
+  timezone: "Timezone (e.g. Asia/Dubai)",
   custom: "Extra field",
   ignore: "Don't import",
 };
@@ -18,6 +28,7 @@ const GUESSES: [Target, RegExp][] = [
   ["full_name", /^(name|full name|fullname|contact name|contact)$/],
   ["company", /^(company|company name|organisation|organization|business|business name|account|account name)$/],
   ["country", /^(country|country name|location country)$/],
+  ["timezone", /^(timezone|time zone|tz|time-zone)$/],
 ];
 
 // Names the email template already uses; an extra field can't take them.
@@ -52,6 +63,7 @@ export type MappedRow = {
   last_name?: string;
   company?: string;
   country?: string;
+  timezone?: string;
   custom: Record<string, string>;
 };
 
@@ -71,4 +83,18 @@ export function mapRows(rows: Record<string, string>[], mapping: Record<string, 
     }
     return out;
   });
+}
+
+/** Excel rows (first row = column names) as the same records Papa Parse gives for a CSV. */
+export function sheetToRecords(data: unknown[][]): { headers: string[]; rows: Record<string, string>[] } {
+  const [head = [], ...body] = data;
+  const headers = head.map((h) => cellText(h).trim());
+  const rows = body.map((r) => Object.fromEntries(headers.map((h, i) => [h, cellText(r[i])])));
+  return { headers, rows };
+}
+
+function cellText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value);
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { CheckCircle2Icon, FileUpIcon, MegaphoneIcon, UsersRoundIcon } from "lucide-react";
 import Link from "next/link";
 import Papa from "papaparse";
+import { readSheet } from "read-excel-file/browser";
 import { useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Forbidden } from "@/components/forbidden";
@@ -14,10 +16,12 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type Schemas, unwrap } from "@/lib/api/client";
 import { canEdit, useCurrentUser } from "@/lib/session";
-import { fieldKey, guessTarget, mapRows, TARGET_LABELS, type Target } from "./columns";
+import { fieldKey, guessTarget, mapRows, sheetToRecords, TARGET_LABELS, type Target } from "./columns";
+import { ProviderMix } from "./provider-mix";
 
 const MAX_ROWS = 20_000;
 
@@ -41,16 +45,17 @@ function ImportWizard() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [pasting, setPasting] = useState(false);
+  const [mode, setMode] = useState<"file" | "paste" | "sheet">("file");
   const [pasted, setPasted] = useState("");
+  const [sheetUrl, setSheetUrl] = useState("");
   const [mapping, setMapping] = useState<Record<string, Target>>({});
   const [name, setName] = useState("");
   const [source, setSource] = useState("");
   const [result, setResult] = useState<Schemas["ImportOut"] | null>(null);
 
-  function load(fileName: string, results: Papa.ParseResult<Record<string, string>>) {
-    const headers = (results.meta.fields ?? []).filter((h) => h.trim() !== "");
-    const rows = results.data.filter((r) => Object.values(r).some((v) => (v ?? "").trim() !== ""));
+  function load(fileName: string, rawHeaders: string[], rawRows: Record<string, string>[]) {
+    const headers = rawHeaders.filter((h) => h.trim() !== "");
+    const rows = rawRows.filter((r) => Object.values(r).some((v) => (v ?? "").trim() !== ""));
     if (headers.length === 0 || rows.length === 0) {
       setParseError("That file has no rows. The first line must be the column names.");
       return;
@@ -69,19 +74,43 @@ function ImportWizard() {
     setParseError(null);
     setParsed({ fileName, headers, rows });
     setMapping(guessed);
-    setName(fileName.replace(/\.(csv|txt)$/i, ""));
+    setName(fileName.replace(/\.(csv|txt|xlsx)$/i, ""));
     setResult(null);
+  }
+
+  function loadCsvText(fileName: string, text: string) {
+    const results = Papa.parse<Record<string, string>>(text.trim(), parseConfig);
+    load(fileName, results.meta.fields ?? [], results.data);
   }
 
   const parseConfig = { header: true, skipEmptyLines: "greedy" as const, transformHeader: (h: string) => h.trim() };
 
-  function onFile(file: File) {
+  async function onFile(file: File) {
+    if (/\.xlsx$/i.test(file.name)) {
+      try {
+        const { headers, rows } = sheetToRecords(await readSheet(file));
+        load(file.name, headers, rows);
+      } catch {
+        setParseError("Couldn't read that Excel file. Save it as .xlsx (or CSV) and try again.");
+      }
+      return;
+    }
+    if (/\.xls$/i.test(file.name)) {
+      setParseError("Old .xls files aren't supported. In Excel, use File → Save As → .xlsx or CSV.");
+      return;
+    }
     Papa.parse<Record<string, string>>(file, {
       ...parseConfig,
-      complete: (results) => load(file.name, results),
+      complete: (results) => load(file.name, results.meta.fields ?? [], results.data),
       error: (e) => setParseError(`Couldn't read that file: ${e.message}`),
     });
   }
+
+  const sheet = useMutation({
+    mutationFn: () => unwrap(api.POST("/api/groups/google-sheet", { body: { url: sheetUrl } })),
+    onSuccess: (data) => loadCsvText(`Google Sheet ${format(new Date(), "d MMM HH:mm")}`, data.csv),
+    onError: (e) => setParseError(e.message),
+  });
 
   function reset() {
     setParsed(null);
@@ -89,6 +118,7 @@ function ImportWizard() {
     setName("");
     setSource("");
     setPasted("");
+    setSheetUrl("");
     setResult(null);
     if (fileInput.current) fileInput.current.value = "";
   }
@@ -116,21 +146,19 @@ function ImportWizard() {
     <div className="grid gap-6">
       <PageHeader
         title="Import leads"
-        description="Upload a CSV, match its columns, and the leads become a group you can send a campaign to."
+        description="Upload a CSV or Excel file, or link a Google Sheet. Match its columns, and the leads become a group you can send a campaign to."
       />
 
       <Card>
         <CardHeader>
-          <CardTitle>1. Choose a CSV file</CardTitle>
-          <CardDescription>
-            The first line must hold the column names. From Excel or Google Sheets, use File → Download → CSV.
-          </CardDescription>
+          <CardTitle>1. Choose your leads</CardTitle>
+          <CardDescription>The first row must hold the column names.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <input
             ref={fileInput}
             type="file"
-            accept=".csv,text/csv,text/plain"
+            accept=".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="sr-only"
             id="csv-file"
             onChange={(e) => {
@@ -150,33 +178,66 @@ function ImportWizard() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => fileInput.current?.click()}>
-                <FileUpIcon data-icon="inline-start" /> Choose CSV file
-              </Button>
-              <Button variant="ghost" onClick={() => setPasting((p) => !p)}>
-                {pasting ? "Hide" : "Or paste CSV text"}
-              </Button>
-            </div>
-          )}
-          {pasting && !parsed && (
-            <div className="grid gap-2">
-              <Textarea
-                value={pasted}
-                onChange={(e) => setPasted(e.target.value)}
-                rows={6}
-                className="font-mono text-xs"
-                placeholder={"email,first_name,company\nsara@acme.com,Sara,Acme"}
-                aria-label="CSV text"
-              />
-              <Button
-                variant="outline"
-                className="w-fit"
-                disabled={!pasted.trim()}
-                onClick={() => load("Pasted leads", Papa.parse<Record<string, string>>(pasted.trim(), parseConfig))}
-              >
-                Use this text
-              </Button>
+            <div className="grid gap-4">
+              <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
+                <TabsList>
+                  <TabsTrigger value="file">CSV or Excel file</TabsTrigger>
+                  <TabsTrigger value="sheet">Google Sheets link</TabsTrigger>
+                  <TabsTrigger value="paste">Paste CSV text</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {mode === "file" && (
+                <Button className="w-fit" onClick={() => fileInput.current?.click()}>
+                  <FileUpIcon data-icon="inline-start" /> Choose file (.csv or .xlsx)
+                </Button>
+              )}
+              {mode === "sheet" && (
+                <form
+                  className="grid gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    sheet.mutate();
+                  }}
+                >
+                  <div className="flex flex-wrap gap-2">
+                    <Input
+                      value={sheetUrl}
+                      onChange={(e) => setSheetUrl(e.target.value)}
+                      placeholder="https://docs.google.com/spreadsheets/d/…"
+                      aria-label="Google Sheets link"
+                      className="min-w-72 flex-1"
+                      required
+                    />
+                    <Button type="submit" variant="outline" disabled={sheet.isPending || !sheetUrl.trim()}>
+                      {sheet.isPending ? "Fetching…" : "Fetch sheet"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    In Google Sheets, click Share → General access → &ldquo;Anyone with the link&rdquo; (Viewer), then copy
+                    the link. The tab that&apos;s open in the link is the one imported.
+                  </p>
+                </form>
+              )}
+              {mode === "paste" && (
+                <div className="grid gap-2">
+                  <Textarea
+                    value={pasted}
+                    onChange={(e) => setPasted(e.target.value)}
+                    rows={6}
+                    className="font-mono text-xs"
+                    placeholder={"email,first_name,company\nsara@acme.com,Sara,Acme"}
+                    aria-label="CSV text"
+                  />
+                  <Button
+                    variant="outline"
+                    className="w-fit"
+                    disabled={!pasted.trim()}
+                    onClick={() => loadCsvText(`Pasted leads ${format(new Date(), "d MMM HH:mm")}`, pasted)}
+                  >
+                    Use this text
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           {parseError && (
@@ -276,7 +337,7 @@ function ImportWizard() {
           </CardContent>
           <CardFooter className="flex-wrap justify-between gap-3">
             <span className="text-sm text-muted-foreground">
-              Invalid addresses are left out. Addresses already in the system keep their existing details.
+              Invalid addresses are left out. Addresses already in the system wait for you to review as duplicates.
             </span>
             <Button onClick={() => submit.mutate()} disabled={!!mappingError || !name.trim() || submit.isPending}>
               {submit.isPending ? "Importing…" : `Import ${parsed.rows.length.toLocaleString()} rows`}
@@ -298,8 +359,7 @@ function ImportWizard() {
 function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onAnother: () => void }) {
   const stats = [
     { label: "New leads", value: result.added },
-    { label: "Already in the system", value: result.existing },
-    { label: "Repeated in the file", value: result.duplicates_in_file },
+    { label: "Duplicates to review", value: result.pending_duplicates },
     { label: "Invalid, left out", value: result.invalid_count },
   ];
   return (
@@ -314,7 +374,7 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
           <CardDescription>The group is ready to use in a campaign.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {stats.map((s) => (
               <div key={s.label} className="grid gap-1 rounded-lg border p-3">
                 <dt className="text-xs text-muted-foreground">{s.label}</dt>
@@ -322,6 +382,20 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
               </div>
             ))}
           </dl>
+          <ProviderMix mix={result.provider_mix} />
+          {result.pending_duplicates > 0 && (
+            <Alert>
+              <AlertDescription>
+                {result.pending_duplicates.toLocaleString()} row{result.pending_duplicates === 1 ? " has an email" : "s have emails"} that
+                {result.pending_duplicates === 1 ? " is" : " are"} already in the system or repeated in this file. They aren&apos;t in the group
+                and won&apos;t be emailed until you{" "}
+                <Link href="/leads/duplicates" className="font-medium underline underline-offset-4">
+                  review the duplicates
+                </Link>
+                .
+              </AlertDescription>
+            </Alert>
+          )}
           {result.invalid.length > 0 && (
             <div className="grid gap-2">
               <span className="text-sm font-medium">Rows left out</span>

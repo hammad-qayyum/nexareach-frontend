@@ -36,10 +36,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api, type Campaign, type Recipient, type RecipientStatus, unwrap } from "@/lib/api/client";
+import { api, type Campaign, type Recipient, type RecipientStatus, type Schemas, unwrap } from "@/lib/api/client";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { canEdit, useCurrentUser } from "@/lib/session";
-import { CampaignForm, type CampaignValues, scheduleSummary } from "../campaign-form";
+import { Audience } from "../audience";
+import { CampaignForm, type CampaignValues, EmailHtml, scheduleSummary } from "../campaign-form";
 import {
   CampaignStatusBadge,
   RECIPIENT_STATUSES,
@@ -166,7 +167,17 @@ export function CampaignDetail() {
         <TabsList>
           {started && <TabsTrigger value="recipients">Recipients</TabsTrigger>}
           <TabsTrigger value="setup">{editableNow ? "Edit" : "Email and settings"}</TabsTrigger>
+          {!started && (
+            <TabsTrigger value="audience">
+              Leads{c.excluded_count > 0 ? ` (${c.excluded_count} left out)` : ""}
+            </TabsTrigger>
+          )}
         </TabsList>
+        {!started && (
+          <TabsContent value="audience" className="pt-4">
+            <Audience campaign={c} editable={editable} />
+          </TabsContent>
+        )}
         {started && (
           <TabsContent value="recipients" className="pt-4">
             <Recipients campaign={c} />
@@ -206,8 +217,9 @@ export function CampaignDetail() {
                 <AlertDialogTitle>Start sending &ldquo;{c.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Emails go out one at a time from {c.mailboxes.map((m) => m.email).join(", ") || "no mailbox"}, {scheduleSummary(c)}.
-                  People on the do-not-contact list, or emailed in the last 30 days, are skipped. Save any edits
-                  first, and send yourself a test if you haven&apos;t.
+                  People on the do-not-contact list, or emailed in the last 30 days, are skipped
+                  {c.excluded_count > 0 ? `, and the ${c.excluded_count} you left out won't be emailed` : ""}. Save any
+                  edits first, and send yourself a test if you haven&apos;t.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -253,7 +265,7 @@ export function CampaignDetail() {
 
 function ProgressCard({ campaign: c }: { campaign: Campaign }) {
   const stats: { label: string; value: number }[] = [
-    { label: "Waiting", value: c.counts.waiting },
+    { label: "Waiting", value: c.counts.waiting + c.counts.sending },
     { label: "Sent", value: c.counts.sent },
     { label: "Failed", value: c.counts.failed },
     { label: "Skipped", value: c.counts.skipped },
@@ -263,6 +275,15 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
     .map((m) => new Date(m.next_send_at!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
   const problems = c.mailboxes.filter((m) => m.status !== "ACTIVE");
+  // Sending happens in the background worker. If it stops (crash, restart, laptop asleep) nothing
+  // is lost: every lead's status is in the database and sending resumes where it left off.
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: async (): Promise<Schemas["HealthOut"]> => (await fetch("/api/health", { credentials: "include" })).json(),
+    refetchInterval: 30_000,
+    enabled: c.status === "RUNNING",
+  });
+  const workerDown = c.status === "RUNNING" && health.data !== undefined && !health.data.worker;
 
   return (
     <Card>
@@ -291,9 +312,16 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
             {c.finished_at && <span>Ended {formatDateTime(c.finished_at)}</span>}
           </div>
         </div>
+        {workerDown && (
+          <p className="text-sm text-destructive">
+            Sending is stopped: the background worker isn&apos;t running
+            {health.data?.worker_last_seen ? ` (last seen ${formatRelative(health.data.worker_last_seen)})` : ""}. Nothing
+            is lost. Once it&apos;s running again this campaign continues from where it stopped.
+          </p>
+        )}
         {problems.length > 0 && c.status === "RUNNING" && (
           <p className="text-sm text-destructive">
-            Not sending from {problems.map((m) => m.email).join(", ")} ({problems.some((m) => m.status === "ERROR") ? "login failed" : "paused"}). Fix it on the{" "}
+            Not sending from {problems.map((m) => m.email).join(", ")} ({problems.some((m) => m.status === "ERROR") ? "not connected" : "paused"}). Fix it on the{" "}
             <Link href="/mailboxes" className="underline underline-offset-4">
               Mailboxes
             </Link>{" "}
@@ -440,10 +468,21 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                     Server reply: <span className="font-mono text-xs">{open.smtp_response}</span>
                   </p>
                 )}
+                {open.sent_copy_saved !== null && open.status === "SENT" && (
+                  <p className="text-muted-foreground">
+                    {open.sent_copy_saved
+                      ? "A copy was saved in the mailbox's Sent folder."
+                      : "The email was sent, but saving a copy in the Sent folder failed."}
+                  </p>
+                )}
                 {open.body_sent && (
-                  <div className="grid max-h-96 gap-2 overflow-auto rounded-lg border bg-muted/30 p-3">
+                  <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
                     <p className="font-medium">{open.subject_sent}</p>
-                    <pre className="font-sans text-sm whitespace-pre-wrap">{open.body_sent}</pre>
+                    {open.html_sent ? (
+                      <EmailHtml html={open.html_sent} />
+                    ) : (
+                      <pre className="max-h-80 overflow-auto font-sans text-sm whitespace-pre-wrap">{open.body_sent}</pre>
+                    )}
                   </div>
                 )}
               </div>
@@ -461,6 +500,8 @@ function Summary({ campaign: c }: { campaign: Campaign }) {
     ["Sent from", c.mailboxes.map((m) => `${m.display_name} <${m.email}>`).join(", ") || "—"],
     ["When", scheduleSummary(c)],
     ["Gap between emails", `${c.gap_min_seconds / 60}–${c.gap_max_seconds / 60} minutes per mailbox`],
+    ["Local time", c.use_lead_timezone ? "Each lead's own timezone" : "The campaign's timezone for everyone"],
+    ["Format", c.body_format === "HTML" ? "Rich text (with a plain-text copy)" : "Plain text"],
   ];
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
@@ -485,7 +526,11 @@ function Summary({ campaign: c }: { campaign: Campaign }) {
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
           <p className="font-medium">{c.subject}</p>
-          <pre className="font-sans whitespace-pre-wrap text-muted-foreground">{c.body}</pre>
+          {c.body_format === "HTML" ? (
+            <div className="email-html text-muted-foreground" dangerouslySetInnerHTML={{ __html: c.body }} />
+          ) : (
+            <pre className="font-sans whitespace-pre-wrap text-muted-foreground">{c.body}</pre>
+          )}
         </CardContent>
       </Card>
     </div>

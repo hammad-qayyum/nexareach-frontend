@@ -18,6 +18,8 @@ export type CampaignStatus = Schemas["CampaignOut"]["status"];
 export type Recipient = Schemas["RecipientOut"];
 export type RecipientStatus = Schemas["RecipientOut"]["status"];
 export type DncEntry = Schemas["DncOut"];
+export type Duplicate = Schemas["DuplicateOut"];
+export type DuplicateDecision = Schemas["ResolveIn"]["decision"];
 
 /** A failed API call. `code` is the backend's snake_case `detail` (e.g. "forbidden"). */
 export class ApiError extends Error {

@@ -17,8 +17,8 @@ import { canEdit, useCurrentUser } from "@/lib/session";
 import { CampaignStatusBadge } from "./campaign-status";
 
 export function doneShare(c: Campaign) {
-  const { total, waiting } = c.counts;
-  return total ? Math.round(((total - waiting) / total) * 100) : 0;
+  const { total, waiting, sending } = c.counts;
+  return total ? Math.round(((total - waiting - sending) / total) * 100) : 0;
 }
 
 export function CampaignsView() {

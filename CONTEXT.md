@@ -32,11 +32,22 @@ Both use the `main` branch and are committed and pushed separately.
 **Not done:** the Impeccable design skill wasn't installed, so the UI uses a restrained shadcn base (neutral greys, one blue accent in `globals.css`). Install Impeccable and run its polish pass later (plan milestone 12). No automated frontend tests yet.
 
 **"Send today" slice: done** (cut-down milestones 2, 4, 6 and 7; see the backend CONTEXT.md for what the API does and doesn't do yet):
-- `/settings`: email footer. `/mailboxes`: add, edit, test connection, pause, delete if unused. `/dnc`: add emails or domains in bulk, search, remove.
+- `/settings`: email footer. `/mailboxes`: add and edit (each save tests the connection; a mailbox only shows Active after a passing test), test connection, pause, delete (only if it never sent and isn't in a running/paused campaign; the API's `can_delete` decides), otherwise archive (hidden behind "Show archived", restore brings it back paused). `/dnc`: add emails or domains in bulk, search, remove.
 - `/leads/import`: pick or paste a CSV, parsed in the browser with papaparse (`columns.ts` guesses the mapping; other columns become `{{snake_case}}` fields), name the group, import, then jump to a new campaign for it. `/leads/groups` and `/leads/groups/[id]`: list, delete if unused, search leads.
 - `/campaigns`, `/campaigns/new`, `/campaigns/[id]`: one form (`campaign-form.tsx`) for create and edit (groups locked once started), click-to-insert variables, 3-version preview, pace and window with an estimate, test send, start/pause/resume/cancel, live progress (refreshes every 10 s while sending) and a recipients table showing the exact email sent.
 
-**Next:** the rest of milestone 2 and then verification (3). Later milestones add Tiptap (rich-text editor) and Recharts (reports).
+**Milestone 5 (Duplicates): done.** `/leads/duplicates`: pending and decided tabs, group filter, old-vs-new comparison with differing fields highlighted, keep new / old / both per row, for selected rows, or for all pending (with confirmation). The sidebar shows the pending count; the import result, groups list, group page and campaign form all point to pending duplicates.
+
+**Crash safety in the UI:** recipients can be "Sending" (counted with Waiting in progress). While a campaign is running, its page checks `/api/health` every 30 s and says plainly when the background worker isn't running, and that sending resumes where it stopped.
+
+**Milestones 4, 6, 7 and 12 (frontend parts): done.**
+- Import has three sources (CSV or Excel `.xlsx` read in the browser with `read-excel-file/browser`, a Google Sheets link fetched by the API, or pasted text), a Timezone column target, and a provider-mix bar in the result.
+- The group page has rename, provider and country filters, add / edit / remove lead, and timezone and provider columns.
+- The campaign form has a Plain / Rich text switch. Rich text uses Tiptap 3 (`src/components/rich-editor.tsx`, styles in `globals.css`), and fields insert at the cursor in either mode. It also has "Use each lead's own timezone", and previews and sent emails show in a sandboxed iframe (`EmailHtml`). Drafts have a **Leads** tab (`campaigns/audience.tsx`) for leaving people out.
+- Mailboxes take an IMAP server for the Sent copy, defaulting to the SMTP host.
+- Production: `Dockerfile` builds the Next.js standalone server (`output: "standalone"`); the backend repo's `deploy/` runs it.
+
+**Next:** milestone 8 (replies). Later milestones add Tiptap (rich-text editor) and Recharts (reports).
 
 ## How the frontend is built
 

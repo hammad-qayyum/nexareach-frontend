@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { ChevronsUpDownIcon, LogOutIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,6 +33,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { api, unwrap } from "@/lib/api/client";
 import { initials } from "@/lib/format";
 import { activeNavItem, navForRole } from "@/lib/nav";
 import { ROLE_LABELS, signOut, useCurrentUser } from "@/lib/session";
@@ -41,6 +43,12 @@ export function AppSidebar() {
   const pathname = usePathname();
   const active = activeNavItem(pathname);
   const { isMobile, setOpenMobile } = useSidebar();
+  const duplicates = useQuery({
+    queryKey: ["duplicates", "count"],
+    queryFn: () => unwrap(api.GET("/api/duplicates/count")),
+    refetchInterval: 60_000,
+  });
+  const pending = duplicates.data?.pending ?? 0;
 
   return (
     <Sidebar collapsible="icon">
@@ -66,6 +74,11 @@ export function AppSidebar() {
                     {item.milestone && (
                       <SidebarMenuBadge className="text-[10px] font-normal text-muted-foreground">
                         Soon
+                      </SidebarMenuBadge>
+                    )}
+                    {item.href === "/leads/duplicates" && pending > 0 && (
+                      <SidebarMenuBadge className="rounded-full bg-warning/20 px-1.5 text-xs tabular-nums">
+                        {pending.toLocaleString()}
                       </SidebarMenuBadge>
                     )}
                   </SidebarMenuItem>

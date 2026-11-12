@@ -24,10 +24,12 @@ export function MailboxDialog({
   state,
   onOpenChange,
   onSaved,
+  onChanged,
 }: {
   state: { mailbox: Mailbox | null } | null;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  onChanged: () => void;
 }) {
   return (
     <Dialog open={!!state} onOpenChange={onOpenChange}>
@@ -38,6 +40,7 @@ export function MailboxDialog({
             mailbox={state.mailbox}
             onCancel={() => onOpenChange(false)}
             onSaved={onSaved}
+            onChanged={onChanged}
           />
         )}
       </DialogContent>
@@ -46,14 +49,19 @@ export function MailboxDialog({
 }
 
 function MailboxForm({
-  mailbox,
+  mailbox: initial,
   onCancel,
   onSaved,
+  onChanged,
 }: {
   mailbox: Mailbox | null;
   onCancel: () => void;
   onSaved: () => void;
+  onChanged: () => void;
 }) {
+  // After a first save whose connection test failed, the form keeps editing that saved mailbox.
+  const [mailbox, setMailbox] = useState<Mailbox | null>(initial);
+  const [failure, setFailure] = useState<string | null>(null);
   const [email, setEmail] = useState(mailbox?.email ?? "");
   const [displayName, setDisplayName] = useState(mailbox?.display_name ?? "");
   const [host, setHost] = useState(mailbox?.smtp_host ?? "");
@@ -62,6 +70,12 @@ function MailboxForm({
   const [username, setUsername] = useState(mailbox?.smtp_username ?? "");
   const [password, setPassword] = useState("");
   const [cap, setCap] = useState(String(mailbox?.daily_cap ?? 40));
+  // Sent copies: cPanel uses the same server for incoming mail, so a new mailbox mirrors the SMTP
+  // server until someone types a different one.
+  const [imapHost, setImapHost] = useState(mailbox ? (mailbox.imap_host ?? "") : "");
+  const [imapTouched, setImapTouched] = useState(!!mailbox);
+  const [imapPort, setImapPort] = useState(String(mailbox?.imap_port ?? 993));
+  const effectiveImapHost = imapTouched ? imapHost : host;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -71,6 +85,8 @@ function MailboxForm({
         smtp_port: Number(port),
         smtp_security: security,
         smtp_username: username || email,
+        imap_host: effectiveImapHost.trim() || null,
+        imap_port: Number(imapPort) || 993,
         daily_cap: Number(cap),
       };
       if (mailbox) {
@@ -84,7 +100,15 @@ function MailboxForm({
       return unwrap(api.POST("/api/mailboxes", { body: { ...common, email, smtp_password: password } }));
     },
     onSuccess: (m) => {
-      toast.success(mailbox ? `Saved ${m.email}.` : `Added ${m.email}. Use "Test connection" to check the login.`);
+      if (m.connection && !m.connection.ok) {
+        // Saved, but not active: stay open so the settings can be corrected and tested again.
+        setMailbox(m);
+        setFailure(m.connection.detail);
+        onChanged();
+        return;
+      }
+      if (m.connection?.ok) toast.success(`Connected. ${m.email} is active. ${m.connection.detail}`);
+      else toast.success(`Saved ${m.email}.`);
       onSaved();
     },
   });
@@ -101,13 +125,22 @@ function MailboxForm({
         <DialogTitle>{mailbox ? `Edit ${mailbox.email}` : "Add a mailbox"}</DialogTitle>
         <DialogDescription>
           Use the outgoing (SMTP) settings from your mail host, for example cPanel&apos;s &quot;Connect Devices&quot;
-          page. The password is stored encrypted.
+          page. The connection is tested when you save, and the mailbox only becomes active if it works. The
+          password is stored encrypted.
         </DialogDescription>
       </DialogHeader>
       <FieldGroup>
         {save.error && (
           <Alert variant="destructive">
             <AlertDescription>{save.error.message}</AlertDescription>
+          </Alert>
+        )}
+        {failure && !save.isPending && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Saved, but not active: the connection test failed. {failure} Correct the settings below and save
+              again to re-test.
+            </AlertDescription>
           </Alert>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -204,6 +237,35 @@ function MailboxForm({
             />
           </Field>
         </div>
+        <div className="grid gap-4 sm:grid-cols-[1fr_6rem]">
+          <Field>
+            <FieldLabel htmlFor="mb-imap">Incoming mail (IMAP) server</FieldLabel>
+            <Input
+              id="mb-imap"
+              value={effectiveImapHost}
+              onChange={(e) => {
+                setImapTouched(true);
+                setImapHost(e.target.value);
+              }}
+              placeholder="mail.fastnexa.com"
+            />
+            <FieldDescription>
+              Used to save a copy of every sent email in this mailbox&apos;s Sent folder (SSL, same username and
+              password). Leave empty to skip.
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="mb-imap-port">Port</FieldLabel>
+            <Input
+              id="mb-imap-port"
+              type="number"
+              min={1}
+              max={65535}
+              value={imapPort}
+              onChange={(e) => setImapPort(e.target.value)}
+            />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="mb-cap">Daily cap</FieldLabel>
           <Input
@@ -227,7 +289,7 @@ function MailboxForm({
           Cancel
         </Button>
         <Button type="submit" disabled={save.isPending}>
-          {save.isPending ? "Saving…" : mailbox ? "Save" : "Add mailbox"}
+          {save.isPending ? "Saving and testing…" : mailbox ? "Save and test" : "Add and test"}
         </Button>
       </DialogFooter>
     </form>

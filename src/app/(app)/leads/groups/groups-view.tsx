@@ -86,6 +86,7 @@ export function GroupsView() {
                 <TableHead className="pl-4">Group</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead className="text-right">Leads</TableHead>
+                <TableHead>Duplicates</TableHead>
                 <TableHead>Imported</TableHead>
                 <TableHead className="w-12">
                   <span className="sr-only">Actions</span>
@@ -102,6 +103,19 @@ export function GroupsView() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{g.source ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{g.lead_count.toLocaleString()}</TableCell>
+                  <TableCell>
+                    {g.pending_count > 0 ? (
+                      <Link
+                        href="/leads/duplicates"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm font-medium underline underline-offset-4"
+                      >
+                        {g.pending_count.toLocaleString()} to review
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(g.created_at)}</TableCell>
                   <TableCell className="pr-2 text-right" onClick={(e) => e.stopPropagation()}>
                     {editable && (
