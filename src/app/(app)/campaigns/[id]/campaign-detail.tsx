@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftIcon, PauseIcon, PlayIcon, SearchIcon, SendIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, DownloadIcon, PauseIcon, PlayIcon, SearchIcon, SendIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -263,6 +263,20 @@ export function CampaignDetail() {
   );
 }
 
+/** Rough time left: each active mailbox sends up to its daily cap, or as many as its gaps allow in the sending hours. */
+function finishEstimate(c: Campaign): string | null {
+  const remaining = c.counts.waiting + c.counts.sending;
+  const active = c.mailboxes.filter((m) => m.status === "ACTIVE");
+  if (c.status !== "RUNNING" || remaining === 0 || active.length === 0) return null;
+  const avgGap = (c.gap_min_seconds + c.gap_max_seconds) / 2;
+  const hours = c.end_hour - c.start_hour;
+  const perDay = active.reduce((n, m) => n + Math.max(1, Math.min(m.daily_cap, Math.floor((hours * 3600) / avgGap))), 0);
+  const days = Math.ceil(remaining / perDay);
+  return days <= 1
+    ? `About ${perDay} a day, so the rest should go out within 1 sending day`
+    : `About ${perDay} a day, so roughly ${days} sending days left`;
+}
+
 function ProgressCard({ campaign: c }: { campaign: Campaign }) {
   const stats: { label: string; value: number }[] = [
     { label: "Waiting", value: c.counts.waiting + c.counts.sending },
@@ -311,6 +325,11 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
             )}
             {c.finished_at && <span>Ended {formatDateTime(c.finished_at)}</span>}
           </div>
+          {finishEstimate(c) && (
+            <p className="text-xs text-muted-foreground">
+              {finishEstimate(c)} (longer if these mailboxes also send other campaigns).
+            </p>
+          )}
         </div>
         {workerDown && (
           <p className="text-sm text-destructive">
@@ -331,6 +350,14 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
       </CardContent>
     </Card>
   );
+}
+
+function exportUrl(id: number, status: string, q: string) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (q) params.set("q", q);
+  const query = params.toString();
+  return `/api/campaigns/${id}/recipients/export${query ? `?${query}` : ""}`;
 }
 
 function Recipients({ campaign }: { campaign: Campaign }) {
@@ -389,6 +416,12 @@ function Recipients({ campaign }: { campaign: Campaign }) {
             aria-label="Search recipients"
           />
         </div>
+        <Button variant="outline" className="sm:ml-auto" asChild>
+          {/* A plain download link: the browser sends the session cookie, and exports are logged. */}
+          <a href={exportUrl(campaign.id, status, q)} download>
+            <DownloadIcon data-icon="inline-start" /> Export CSV
+          </a>
+        </Button>
       </div>
       {recipients.error ? (
         <QueryError error={recipients.error} onRetry={() => recipients.refetch()} />

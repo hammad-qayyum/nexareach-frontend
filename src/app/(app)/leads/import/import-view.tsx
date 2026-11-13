@@ -403,6 +403,7 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
                 {result.invalid.map((r) => (
                   <li key={r.row}>
                     Row {r.row}: {r.email || "(no email)"}
+                    {r.reason === "forgotten" && " (asked to be forgotten)"}
                   </li>
                 ))}
               </ul>

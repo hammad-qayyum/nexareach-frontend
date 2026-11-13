@@ -1,4 +1,5 @@
 import {
+  ChartColumnIcon,
   CopyIcon,
   FlameIcon,
   GaugeIcon,
@@ -74,6 +75,12 @@ export const NAV: NavGroup[] = [
         icon: InboxIcon,
         description: "Replies detected across all campaigns.",
         milestone: 8,
+      },
+      {
+        title: "Reports",
+        href: "/reports",
+        icon: ChartColumnIcon,
+        description: "Emails sent per day, per mailbox and per campaign.",
       },
     ],
   },

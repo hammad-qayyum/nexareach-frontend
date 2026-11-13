@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -22,9 +23,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Lead, unwrap } from "@/lib/api/client";
 import { formatDate } from "@/lib/format";
-import { canEdit, useCurrentUser } from "@/lib/session";
+import { canEdit, isAdmin, useCurrentUser } from "@/lib/session";
 import { ProviderMix } from "../../import/provider-mix";
-import { AddLeadDialog, EditLeadDialog, PROVIDER_LABELS, RenameGroupDialog } from "./lead-dialogs";
+import { AddLeadDialog, EditLeadDialog, exportPerson, ForgetPersonDialog, PROVIDER_LABELS, RenameGroupDialog } from "./lead-dialogs";
 
 const PAGE_SIZE = 50;
 const ALL = "__all__";
@@ -43,6 +44,7 @@ export function GroupDetail() {
   const [adding, setAdding] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
+  const [forgetting, setForgetting] = useState<Lead | null>(null);
 
   const group = useQuery({
     queryKey: ["groups", groupId],
@@ -262,9 +264,25 @@ export function GroupDetail() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="min-w-44">
                               <DropdownMenuItem onSelect={() => setEditing(lead)}>Edit details</DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  exportPerson(lead.email).then(
+                                    () => toast.success(`Downloaded everything held about ${lead.email}.`),
+                                    (e: Error) => toast.error(e.message),
+                                  )
+                                }
+                              >
+                                Download their data
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem variant="destructive" onSelect={() => remove.mutate(lead)}>
                                 Remove from this group
                               </DropdownMenuItem>
+                              {isAdmin(me.role) && (
+                                <DropdownMenuItem variant="destructive" onSelect={() => setForgetting(lead)}>
+                                  Forget this person…
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -295,6 +313,16 @@ export function GroupDetail() {
         onDone={() => {
           setEditing(null);
           refresh();
+        }}
+      />
+      <ForgetPersonDialog
+        lead={forgetting}
+        onOpenChange={(open) => !open && setForgetting(null)}
+        onDone={() => {
+          setForgetting(null);
+          refresh();
+          queryClient.invalidateQueries({ queryKey: ["duplicates"] });
+          queryClient.invalidateQueries({ queryKey: ["campaigns"] });
         }}
       />
       {group.data && (

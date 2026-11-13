@@ -39,7 +39,7 @@ import { MailboxDialog } from "./mailbox-dialog";
 
 export const MAILBOXES_QUERY_KEY = ["mailboxes"] as const;
 
-const STATUS: Record<MailboxStatus, { label: string; tone: Tone }> = {
+export const MAILBOX_STATUS: Record<MailboxStatus, { label: string; tone: Tone }> = {
   ACTIVE: { label: "Active", tone: "good" },
   PAUSED: { label: "Paused", tone: "muted" },
   ERROR: { label: "Not connected", tone: "bad" },
@@ -81,7 +81,7 @@ export function MailboxesView() {
       unwrap(api.PATCH("/api/mailboxes/{mailbox_id}", { params: { path: { mailbox_id: m.id } }, body: { status } })),
     onSuccess: (m) => {
       if (m.connection && !m.connection.ok) toast.error(`${m.email} is still not connected: ${m.connection.detail}`);
-      else toast.success(`${m.email} is now ${STATUS[m.status].label.toLowerCase()}.`);
+      else toast.success(`${m.email} is now ${MAILBOX_STATUS[m.status].label.toLowerCase()}.`);
       refresh();
     },
     onError: (e) => toast.error(e.message),
@@ -195,13 +195,13 @@ export function MailboxesView() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span>
-                              <StatusBadge tone={STATUS[m.status].tone}>{STATUS[m.status].label}</StatusBadge>
+                              <StatusBadge tone={MAILBOX_STATUS[m.status].tone}>{MAILBOX_STATUS[m.status].label}</StatusBadge>
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">{m.last_error}</TooltipContent>
                         </Tooltip>
                       ) : (
-                        <StatusBadge tone={STATUS[m.status].tone}>{STATUS[m.status].label}</StatusBadge>
+                        <StatusBadge tone={MAILBOX_STATUS[m.status].tone}>{MAILBOX_STATUS[m.status].label}</StatusBadge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

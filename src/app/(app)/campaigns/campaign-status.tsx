@@ -21,6 +21,7 @@ const RECIPIENT: Record<RecipientStatus, { label: string; tone: Tone }> = {
 export const SKIP_REASONS: Record<string, string> = {
   do_not_contact: "On the do-not-contact list",
   contacted_recently: "Emailed in the last 30 days",
+  forgotten: "Asked to be forgotten",
 };
 
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {

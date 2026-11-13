@@ -4,7 +4,17 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +26,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { api, type Group, type Lead, unwrap } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 
 export const PROVIDER_LABELS: Record<string, string> = {
   GOOGLE: "Google",
@@ -275,5 +286,75 @@ function RenameForm({ group, onCancel, onDone }: { group: Group; onCancel: () =>
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+/** Download everything held about one person as a JSON file (GDPR right of access). */
+export async function exportPerson(email: string) {
+  const { data, error, response } = await api.POST("/api/people/export", { body: { email }, parseAs: "blob" });
+  if (error || !data) {
+    const detail = (error as { detail?: string } | undefined)?.detail;
+    throw new Error(errorMessage(typeof detail === "string" ? detail : response.status >= 500 ? "server_error" : "unknown"));
+  }
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${email.replace(/[^a-z0-9]+/gi, "-")}-data.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function ForgetPersonDialog({
+  lead,
+  onOpenChange,
+  onDone,
+}: {
+  lead: Lead | null;
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+}) {
+  const forget = useMutation({
+    mutationFn: (email: string) => unwrap(api.POST("/api/people/forget", { body: { email } })),
+    onSuccess: (r, email) => {
+      toast.success(
+        `${email} was forgotten: ${r.leads} lead${r.leads === 1 ? "" : "s"} deleted, removed from ${r.campaigns} campaign${r.campaigns === 1 ? "" : "s"}.`,
+      );
+      onDone();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <AlertDialog open={!!lead} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Forget {lead?.email}?</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="grid gap-2">
+              <p>Use this when the person asks you to delete their data. It can&apos;t be undone.</p>
+              <ul className="list-disc pl-5">
+                <li>Deletes them from every group, and any duplicates waiting for review.</li>
+                <li>Removes their address and the email text from campaign history. The counts stay.</li>
+                <li>Stops any email still waiting to go to them.</li>
+                <li>Keeps a scrambled code of the address on Do not contact, so they&apos;re never emailed or imported again.</li>
+              </ul>
+              <p>Download their data first if they also asked for a copy.</p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep</AlertDialogCancel>
+          <AlertDialogAction
+            className={buttonVariants({ variant: "destructive" })}
+            disabled={forget.isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              if (lead) forget.mutate(lead.email);
+            }}
+          >
+            {forget.isPending ? "Forgetting…" : "Forget this person"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -26,7 +26,7 @@ Both use the `main` branch and are committed and pushed separately.
 - `/invite/[token]`: set password, then on to `/login` with the email filled in
 - `/users` (admin): list, invite (shows the link to send), edit name and role, pause / reactivate / remove, cancel invite, new invite link, reset 2FA
 - `/logs`: filter by action (exact or `auth.`-style group), user (admins), item and date range, all kept in the URL; expandable before/after view; CSV export; pagination
-- `/` dashboard: recent activity and system health. Every other Phase 1 page is a "Not built yet" placeholder naming its milestone
+- `/` dashboard: today's tiles (sent today against the active mailboxes' caps, failed today, running campaigns, duplicates to review), a 7-day sent/failed chart, campaigns in progress, each mailbox's sends against its cap, recent activity and system health
 - API types generated from the backend (`npm run gen:api`)
 
 **Not done:** the Impeccable design skill wasn't installed, so the UI uses a restrained shadcn base (neutral greys, one blue accent in `globals.css`). Install Impeccable and run its polish pass later (plan milestone 12). No automated frontend tests yet.
@@ -47,7 +47,12 @@ Both use the `main` branch and are committed and pushed separately.
 - Mailboxes take an IMAP server for the Sent copy, defaulting to the SMTP host.
 - Production: `Dockerfile` builds the Next.js standalone server (`output: "standalone"`); the backend repo's `deploy/` runs it.
 
-**Next:** milestone 8 (replies). Later milestones add Tiptap (rich-text editor) and Recharts (reports).
+**Milestone 11 (Reports + compliance): done.**
+- `/reports`: period picker (7/30/90 days), total tiles, a stacked sent/failed per-day bar chart (Recharts through shadcn `chart`, colours `--chart-sent` / `--chart-failed` in `globals.css`, a validated colour-blind-safe pair) with a table view, per-mailbox bars and per-campaign progress. `EmailsPerDayChart` and `useSummary` are shared with the dashboard.
+- Campaign page: "Export CSV" of the recipients (current filters) and a rough "sending days left" estimate.
+- Lead menu in a group: "Download their data" (JSON, GDPR access) and, for admins, "Forget this person…". Forgotten people show as "Forgotten person" in campaign recipients and the do-not-contact list.
+
+**Next:** milestone 8 (replies).
 
 ## How the frontend is built
 
@@ -79,11 +84,13 @@ Endpoints that exist now:
 | Invites | `GET /api/auth/invites/{token}`, `POST /api/auth/invites/{token}/accept` |
 | Users (admin) | `GET /api/users`, `POST /api/users/invite`, `PATCH /api/users/{id}`, `POST /api/users/{id}/resend-invite`, `POST /api/users/{id}/reset-2fa` |
 | Logs | `GET /api/logs`, `GET /api/logs/actions`, `GET /api/logs/export` |
+| Reports | `GET /api/reports/summary`, `GET /api/campaigns/{id}/recipients/export` |
+| People (GDPR) | `POST /api/people/export`, `POST /api/people/forget` (admin) |
 | Health | `GET /api/health` |
 
 ## Pages in Phase 1
 
-`/login`, `/` (dashboard), `/leads/import`, `/leads/groups`, `/leads/groups/[id]`, `/leads/duplicates`, `/campaigns`, `/campaigns/new`, `/campaigns/[id]`, `/replies`, `/mailboxes`, `/warmup`, `/deliverability`, `/dnc`, `/logs`, `/settings`, `/users`. See plan section 23.
+`/login`, `/` (dashboard), `/leads/import`, `/leads/groups`, `/leads/groups/[id]`, `/leads/duplicates`, `/campaigns`, `/campaigns/new`, `/campaigns/[id]`, `/replies`, `/reports`, `/mailboxes`, `/warmup`, `/deliverability`, `/dnc`, `/logs`, `/settings`, `/users`. See plan section 23.
 
 ## Running the backend locally
 

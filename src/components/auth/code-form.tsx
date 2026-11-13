@@ -23,7 +23,10 @@ export function CodeForm({
   const [code, setCode] = useState("");
 
   function submit(value: string) {
-    if (value.length === CODE_LENGTH && !pending) onSubmit(value);
+    if (value.length !== CODE_LENGTH || pending) return;
+    onSubmit(value);
+    // Empty the boxes so that, if the code is wrong, the next one can be typed straight away.
+    setCode("");
   }
 
   return (

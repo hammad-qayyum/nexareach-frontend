@@ -833,6 +833,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{campaign_id}/recipients/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Recipients
+         * @description The per-lead report as CSV (the current filters apply).
+         */
+        get: operations["export_recipients_api_campaigns__campaign_id__recipients_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{campaign_id}/audience": {
         parameters: {
             query?: never;
@@ -867,6 +887,63 @@ export interface paths {
          */
         put: operations["set_exclusions_api_campaigns__campaign_id__exclusions_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_api_reports_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Person
+         * @description Everything held about this person, as a JSON file (right of access).
+         */
+        post: operations["export_person_api_people_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/forget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Forget Person
+         * @description Erase this person (right to erasure). Admins only; can't be undone.
+         */
+        post: operations["forget_person_api_people_forget_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -947,6 +1024,22 @@ export interface components {
          * @enum {string}
          */
         BodyFormat: "TEXT" | "HTML";
+        /** CampaignCount */
+        CampaignCount: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            status: components["schemas"]["CampaignStatus"];
+            /** Sent */
+            sent: number;
+            /** Failed */
+            failed: number;
+            /** Total */
+            total: number;
+            /** Done */
+            done: number;
+        };
         /** CampaignIn */
         CampaignIn: {
             /**
@@ -1131,6 +1224,18 @@ export interface components {
              */
             cancelled: number;
         };
+        /** DayCount */
+        DayCount: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Sent */
+            sent: number;
+            /** Failed */
+            failed: number;
+        };
         /**
          * Decision
          * @enum {string}
@@ -1260,6 +1365,17 @@ export interface components {
             business_name: string;
             /** Postal Address */
             postal_address: string;
+        };
+        /** ForgetOut */
+        ForgetOut: {
+            /** Leads */
+            leads: number;
+            /** Campaigns */
+            campaigns: number;
+            /** Campaign Emails */
+            campaign_emails: number;
+            /** Duplicate Rows */
+            duplicate_rows: number;
         };
         /** GroupOut */
         GroupOut: {
@@ -1467,6 +1583,17 @@ export interface components {
              */
             mfa: "passed" | "verify" | "setup";
         };
+        /** MailboxCount */
+        MailboxCount: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Sent */
+            sent: number;
+            /** Failed */
+            failed: number;
+        };
         /** MailboxIn */
         MailboxIn: {
             /**
@@ -1550,6 +1677,8 @@ export interface components {
             status: components["schemas"]["MailboxStatus"];
             /** Next Send At */
             next_send_at: string | null;
+            /** Daily Cap */
+            daily_cap: number;
         };
         /**
          * MailboxStatus
@@ -1627,6 +1756,14 @@ export interface components {
             items: components["schemas"]["RecipientOut"][];
             /** Total */
             total: number;
+        };
+        /** PersonIn */
+        PersonIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
         };
         /** PreviewIn */
         PreviewIn: {
@@ -1761,6 +1898,27 @@ export interface components {
          * @enum {string}
          */
         SmtpSecurity: "SSL" | "STARTTLS" | "NONE";
+        /** SummaryOut */
+        SummaryOut: {
+            /** Days */
+            days: components["schemas"]["DayCount"][];
+            /** Mailboxes */
+            mailboxes: components["schemas"]["MailboxCount"][];
+            /** Campaigns */
+            campaigns: components["schemas"]["CampaignCount"][];
+            totals: components["schemas"]["Totals"];
+        };
+        /** Totals */
+        Totals: {
+            /** Sent */
+            sent: number;
+            /** Failed */
+            failed: number;
+            /** Skipped */
+            skipped: number;
+            /** People */
+            people: number;
+        };
         /** TotpSetupOut */
         TotpSetupOut: {
             /** Secret */
@@ -3459,6 +3617,40 @@ export interface operations {
             };
         };
     };
+    export_recipients_api_campaigns__campaign_id__recipients_export_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RecipientStatus"] | null;
+                q?: string | null;
+            };
+            header?: never;
+            path: {
+                campaign_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_audience_api_campaigns__campaign_id__audience_get: {
         parameters: {
             query?: {
@@ -3516,6 +3708,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExclusionsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_api_reports_summary_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                tz?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_person_api_people_export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forget_person_api_people_forget_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgetOut"];
                 };
             };
             /** @description Validation Error */

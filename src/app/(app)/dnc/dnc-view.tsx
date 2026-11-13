@@ -163,7 +163,13 @@ export function DncView() {
                     list.data.items.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell className="pl-4">
-                          <span className="font-mono text-xs">{entry.value}</span>
+                          {entry.value.startsWith("forgotten:") ? (
+                            <span className="text-muted-foreground" title={entry.value}>
+                              Forgotten person
+                            </span>
+                          ) : (
+                            <span className="font-mono text-xs">{entry.value}</span>
+                          )}
                           {entry.kind === "DOMAIN" && (
                             <Badge variant="secondary" className="ml-2 font-normal">
                               whole domain

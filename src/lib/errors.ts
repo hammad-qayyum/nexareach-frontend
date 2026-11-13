@@ -25,6 +25,9 @@ const MESSAGES: Record<string, string> = {
   mailbox_in_active_campaign:
     "A running or paused campaign uses this mailbox. Archive it, or finish or cancel that campaign first.",
   mailbox_archived: "This mailbox is archived. Restore it first.",
+  person_forgotten: "This person asked to be forgotten. They can't be added again.",
+  person_being_emailed: "An email to this person is being sent right now. Try again in a minute.",
+  person_not_found: "We hold no data about this email address.",
   plain_smtp_not_allowed: "Unencrypted SMTP is turned off on this server. Use SSL (465) or STARTTLS (587).",
   group_not_found: "That group no longer exists.",
   group_in_use: "A campaign uses this group, so it can't be deleted.",
