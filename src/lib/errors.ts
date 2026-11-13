@@ -41,7 +41,6 @@ const MESSAGES: Record<string, string> = {
   no_groups: "Choose at least one lead group.",
   no_active_mailbox: "Choose at least one active mailbox to send from.",
   no_mailbox: "Choose a mailbox to send from.",
-  footer_missing: "Add your business name and postal address in Settings first. Every email must include them.",
   invalid_transition: "The campaign can't do that from its current state.",
   invalid_gap: "The longest gap must be at least the shortest gap.",
   invalid_hours: "The sending window must end after it starts.",

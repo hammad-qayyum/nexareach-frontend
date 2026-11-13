@@ -21,7 +21,7 @@ export function SettingsView() {
 
   return (
     <div className="grid gap-6">
-      <PageHeader title="Settings" description="The footer added to every email." />
+      <PageHeader title="Settings" description="Your business details, to use in emails." />
       {footer.error ? (
         <QueryError error={footer.error} onRetry={() => footer.refetch()} />
       ) : footer.isPending ? (
@@ -44,7 +44,7 @@ function FooterForm({ initial }: { initial: { business_name: string; postal_addr
       unwrap(api.PUT("/api/settings/footer", { body: { business_name: businessName, postal_address: address } })),
     onSuccess: (data) => {
       queryClient.setQueryData(FOOTER_QUERY_KEY, data);
-      toast.success("Footer saved.");
+      toast.success("Business details saved.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -53,10 +53,12 @@ function FooterForm({ initial }: { initial: { business_name: string; postal_addr
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>Email footer</CardTitle>
+        <CardTitle>Business details</CardTitle>
         <CardDescription>
-          US and Canadian law require a real postal address in every marketing email. Campaigns can&apos;t start
-          until both fields are filled in.
+          Nothing is added to your emails automatically. To include these, type{" "}
+          <code className="font-mono text-xs">{"{{business_name}}"}</code> or{" "}
+          <code className="font-mono text-xs">{"{{postal_address}}"}</code> in a message. Emails to people in the US
+          or Canada must include a postal address and a way to opt out.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
@@ -86,17 +88,11 @@ function FooterForm({ initial }: { initial: { business_name: string; postal_addr
             <FieldDescription>Keep it to one or two lines.</FieldDescription>
           </Field>
         </FieldGroup>
-        <div className="grid gap-1.5">
-          <span className="text-xs text-muted-foreground">How it appears at the end of each email</span>
-          <pre className="rounded-md border bg-muted/40 p-3 font-sans text-sm whitespace-pre-wrap text-muted-foreground">
-            {`--\n{Sender name} · ${businessName || "Business name"}\n${address || "Postal address"}\nIf this isn't relevant, just reply and I won't email again.`}
-          </pre>
-        </div>
       </CardContent>
       {editable && (
         <CardFooter className="justify-end">
           <Button onClick={() => save.mutate()} disabled={save.isPending || unchanged}>
-            {save.isPending ? "Saving…" : "Save footer"}
+            {save.isPending ? "Saving…" : "Save"}
           </Button>
         </CardFooter>
       )}

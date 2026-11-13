@@ -135,7 +135,7 @@ export const NAV: NavGroup[] = [
         title: "Settings",
         href: "/settings",
         icon: SettingsIcon,
-        description: "The footer added to every email.",
+        description: "Your business details, to use in emails.",
       },
     ],
   },

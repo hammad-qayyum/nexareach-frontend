@@ -298,8 +298,8 @@ export function CampaignForm({
           <CardDescription>
             Click a field to insert it where the cursor is. Add a fallback after a bar:{" "}
             <code className="font-mono text-xs">{"{{first_name|there}}"}</code>. Vary wording with{" "}
-            <code className="font-mono text-xs">{"{Hi|Hello}"}</code>; each email picks one at random. The footer
-            with your address is added automatically.
+            <code className="font-mono text-xs">{"{Hi|Hello}"}</code>; each email picks one at random. Only what you
+            write here is sent; nothing is added.
           </CardDescription>
         </CardHeader>
         <CardContent>
