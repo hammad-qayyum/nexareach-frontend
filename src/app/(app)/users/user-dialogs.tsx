@@ -226,9 +226,10 @@ export function InviteLinkDialog({
               </DialogDescription>
             </DialogHeader>
             <div className="flex min-w-0 items-center gap-1 rounded-md border bg-muted/50 p-1 pl-3">
-              <code className="min-w-0 flex-1 truncate font-mono text-xs">{link.url}</code>
+              <code className="min-w-0 flex-1 truncate font-mono text-xs select-all">{link.url}</code>
               <CopyButton value={link.url} label="Copy link" />
             </div>
+            <WrongAddressWarning url={link.url} />
             <DialogFooter>
               <Button onClick={() => onOpenChange(false)}>Done</Button>
             </DialogFooter>
@@ -236,5 +237,26 @@ export function InviteLinkDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The link's address comes from APP_BASE_URL on the server. Warn when it isn't the address in use. */
+function WrongAddressWarning({ url }: { url: string }) {
+  let linkOrigin: string;
+  try {
+    linkOrigin = new URL(url).origin;
+  } catch {
+    return null;
+  }
+  const here = window.location.origin;
+  if (linkOrigin === here) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertDescription>
+        This link starts with {linkOrigin}, but you&apos;re using {here}, so it may not open for the person you
+        invite. Set <code className="font-mono text-xs">APP_BASE_URL={here}</code> in the backend settings, restart the
+        API, then choose &ldquo;New invite link&rdquo; for this user.
+      </AlertDescription>
+    </Alert>
   );
 }

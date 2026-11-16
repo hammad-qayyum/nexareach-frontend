@@ -36,7 +36,7 @@ import {
 import { api, unwrap } from "@/lib/api/client";
 import { initials } from "@/lib/format";
 import { activeNavItem, navForRole } from "@/lib/nav";
-import { ROLE_LABELS, signOut, useCurrentUser } from "@/lib/session";
+import { ROLE_LABELS, signOut, useCurrentUser, useMe } from "@/lib/session";
 
 export function AppSidebar() {
   const user = useCurrentUser();
@@ -56,6 +56,7 @@ export function AppSidebar() {
         <Link href="/" className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Brand />
         </Link>
+        <EnvironmentBadge />
       </SidebarHeader>
       <SidebarContent>
         {navForRole(user.role).map((group) => (
@@ -151,5 +152,20 @@ function UserMenu() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+/** Shown on a development copy, so it's never mistaken for the live app. */
+function EnvironmentBadge() {
+  const environment = useMe().data?.environment;
+  if (environment !== "development") return null;
+  return (
+    <Badge
+      className="mt-2 w-fit bg-warning/15 text-foreground group-data-[collapsible=icon]:hidden"
+      title="Development copy: emails only go to Mailpit (http://localhost:8025)"
+    >
+      <span className="size-1.5 rounded-full bg-warning" aria-hidden />
+      Development
+    </Badge>
   );
 }
