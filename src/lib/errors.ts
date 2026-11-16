@@ -40,6 +40,8 @@ const MESSAGES: Record<string, string> = {
   content_missing: "Write a subject and a message first.",
   no_groups: "Choose at least one lead group.",
   no_active_mailbox: "Choose at least one active mailbox to send from.",
+  dev_real_mailbox:
+    "This is the development copy, so it only sends through Mailpit. Choose mailboxes that use localhost (Mailpit), not a real mail server.",
   no_mailbox: "Choose a mailbox to send from.",
   invalid_transition: "The campaign can't do that from its current state.",
   invalid_gap: "The longest gap must be at least the shortest gap.",

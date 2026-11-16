@@ -1714,6 +1714,8 @@ export interface components {
              * @enum {string}
              */
             mfa: "passed" | "verify" | "setup";
+            /** Environment */
+            environment: string;
         };
         /** Page[ActivityLogOut] */
         Page_ActivityLogOut_: {
