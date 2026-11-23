@@ -1,14 +1,27 @@
 "use client";
 
+import { nameList } from "@/components/long-list";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftIcon, DownloadIcon, PauseIcon, PlayIcon, SearchIcon, SendIcon, XIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  DownloadIcon,
+  InboxIcon,
+  MessageSquareReplyIcon,
+  PauseIcon,
+  PlayIcon,
+  SearchIcon,
+  SendIcon,
+  XIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Pager } from "@/components/pager";
+import { SearchableSelect } from "@/components/searchable-select";
 import { QueryError } from "@/components/query-error";
+import { StatusBadge } from "@/components/status-dot";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -31,18 +45,21 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Campaign, type Recipient, type RecipientStatus, type Schemas, unwrap } from "@/lib/api/client";
+import { DELIVERY_SOURCE, DELIVERY_STATUS, type DeliveryStatus } from "@/lib/deliverability";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { canEdit, useCurrentUser } from "@/lib/session";
 import { Audience } from "../audience";
-import { CampaignForm, type CampaignValues, EmailHtml, scheduleSummary } from "../campaign-form";
+import { CampaignForm, type CampaignValues, EmailHtml, followUpTiming, scheduleSummary } from "../campaign-form";
 import {
   CampaignStatusBadge,
+  FOLLOW_UP_STOPS,
   RECIPIENT_STATUSES,
   RecipientStatusBadge,
   recipientLabel,
@@ -52,6 +69,8 @@ import { doneShare } from "../campaigns-view";
 
 const PAGE_SIZE = 50;
 const ALL = "__all__";
+// A filter on top of the statuses: people who answered.
+const REPLIED = "REPLIED";
 
 type Action = "start" | "pause" | "resume" | "cancel";
 
@@ -216,7 +235,8 @@ export function CampaignDetail() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Start sending &ldquo;{c.name}&rdquo;?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Emails go out one at a time from {c.mailboxes.map((m) => m.email).join(", ") || "no mailbox"}, {scheduleSummary(c)}.
+                  Emails go out one at a time from{" "}
+                  {c.mailboxes.length > 3 ? `${c.mailboxes.length} mailboxes` : nameList(c.mailboxes.map((m) => m.email)) || "no mailbox"}, {scheduleSummary(c)}.
                   People on the do-not-contact list, or emailed in the last 30 days, are skipped
                   {c.excluded_count > 0 ? `, and the ${c.excluded_count} you left out won't be emailed` : ""}. Save any
                   edits first, and send yourself a test if you haven&apos;t.
@@ -281,9 +301,12 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
   const stats: { label: string; value: number }[] = [
     { label: "Waiting", value: c.counts.waiting + c.counts.sending },
     { label: "Sent", value: c.counts.sent },
+    { label: "Replied", value: c.counts.replied },
     { label: "Failed", value: c.counts.failed },
     { label: "Skipped", value: c.counts.skipped },
   ];
+  const hasFollowUps = (c.follow_ups_enabled && c.follow_ups.length > 0) || c.counts.follow_ups_sent > 0;
+  const firstEmailsDone = c.counts.waiting + c.counts.sending === 0;
   const next = c.mailboxes
     .filter((m) => m.status === "ACTIVE" && m.next_send_at)
     .map((m) => new Date(m.next_send_at!))
@@ -302,7 +325,7 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
   return (
     <Card>
       <CardContent className="grid gap-5">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           {stats.map((s) => (
             <div key={s.label} className="grid gap-0.5">
               <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -316,7 +339,7 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
             <span>
               {doneShare(c)}% of {c.counts.total.toLocaleString()} done
             </span>
-            {c.status === "RUNNING" && (
+            {c.status === "RUNNING" && !firstEmailsDone && (
               <span>
                 {next && next > new Date()
                   ? `Next email ${formatRelative(next.toISOString())}`
@@ -331,6 +354,22 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
             </p>
           )}
         </div>
+        {(hasFollowUps || c.counts.opted_out > 0 || c.counts.bounced > 0 || c.counts.delivered > 0) && (
+          <p className="text-sm text-muted-foreground">
+            {c.counts.delivered > 0 && `${c.counts.delivered.toLocaleString()} confirmed delivered. `}
+            {hasFollowUps &&
+              `Follow-ups: ${c.counts.follow_ups_sent.toLocaleString()} sent, ${c.counts.follow_ups_planned.toLocaleString()} ${
+                c.counts.follow_ups_planned === 1 ? "person has" : "people have"
+              } one still to come. `}
+            {c.counts.opted_out > 0 && `${c.counts.opted_out} asked not to be emailed. `}
+            {c.counts.bounced > 0 &&
+              `${c.counts.bounced} bounced${c.counts.hard_bounced ? ` (${c.counts.hard_bounced} addresses don't exist, now on do-not-contact)` : ""}. `}
+            {c.status === "RUNNING" &&
+              firstEmailsDone &&
+              c.counts.follow_ups_planned > 0 &&
+              "Every first email is out; the campaign finishes after the last follow-up."}
+          </p>
+        )}
         {workerDown && (
           <p className="text-sm text-destructive">
             Sending is stopped: the background worker isn&apos;t running
@@ -340,7 +379,7 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
         )}
         {problems.length > 0 && c.status === "RUNNING" && (
           <p className="text-sm text-destructive">
-            Not sending from {problems.map((m) => m.email).join(", ")} ({problems.some((m) => m.status === "ERROR") ? "not connected" : "paused"}). Fix it on the{" "}
+            Not sending from {nameList(problems.map((m) => m.email))} ({problems.some((m) => m.status === "ERROR") ? "not connected" : "paused"}). Fix it on the{" "}
             <Link href="/mailboxes" className="underline underline-offset-4">
               Mailboxes
             </Link>{" "}
@@ -354,14 +393,33 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
 
 function exportUrl(id: number, status: string, q: string) {
   const params = new URLSearchParams();
-  if (status) params.set("status", status);
+  if (status === REPLIED) params.set("replied", "true");
+  else if (status) params.set("status", status);
   if (q) params.set("q", q);
   const query = params.toString();
   return `/api/campaigns/${id}/recipients/export${query ? `?${query}` : ""}`;
 }
 
 function Recipients({ campaign }: { campaign: Campaign }) {
-  const [status, setStatus] = useState<RecipientStatus | "">("");
+  const [status, setStatus] = useState<RecipientStatus | typeof REPLIED | "">("");
+  const statusParam = status === REPLIED ? undefined : status || undefined;
+  const repliedParam = status === REPLIED ? true : undefined;
+  const queryClient = useQueryClient();
+  const me = useCurrentUser();
+  const markReplied = useMutation({
+    mutationFn: (recipientId: number) =>
+      unwrap(
+        api.POST("/api/campaigns/{campaign_id}/recipients/{recipient_id}/replied", {
+          params: { path: { campaign_id: campaign.id, recipient_id: recipientId } },
+        }),
+      ),
+    onSuccess: (r) => {
+      setOpen(r);
+      queryClient.invalidateQueries({ queryKey: ["campaigns", campaign.id] });
+      toast.success("Marked as replied. They won't get any more follow-ups.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Recipient | null>(null);
@@ -373,7 +431,13 @@ function Recipients({ campaign }: { campaign: Campaign }) {
         api.GET("/api/campaigns/{campaign_id}/recipients", {
           params: {
             path: { campaign_id: campaign.id },
-            query: { status: status || undefined, q: q || undefined, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
+            query: {
+              status: statusParam,
+              replied: repliedParam,
+              q: q || undefined,
+              limit: PAGE_SIZE,
+              offset: (page - 1) * PAGE_SIZE,
+            },
           },
         }),
       ),
@@ -387,7 +451,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
         <Select
           value={status || ALL}
           onValueChange={(v) => {
-            setStatus(v === ALL ? "" : (v as RecipientStatus));
+            setStatus(v === ALL ? "" : (v as RecipientStatus | typeof REPLIED));
             setPage(1);
           }}
         >
@@ -401,6 +465,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                 {recipientLabel(s)}
               </SelectItem>
             ))}
+            <SelectItem value={REPLIED}>Replied</SelectItem>
           </SelectContent>
         </Select>
         <div className="relative w-full max-w-xs">
@@ -459,7 +524,15 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <RecipientStatusBadge status={r.status} />
+                        <div className="grid justify-items-start gap-1">
+                          <RecipientStatusBadge status={r.status} />
+                          {r.delivery_status && (
+                            <span className="text-xs text-muted-foreground">
+                              {DELIVERY_STATUS[r.delivery_status as DeliveryStatus]?.label ?? r.delivery_status}
+                            </span>
+                          )}
+                          {followUpNote(r) && <span className="text-xs text-muted-foreground">{followUpNote(r)}</span>}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{r.mailbox_email ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">
@@ -501,6 +574,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                     Server reply: <span className="font-mono text-xs">{open.smtp_response}</span>
                   </p>
                 )}
+                {open.delivery.length > 0 && <DeliveryTimeline events={open.delivery} />}
                 {open.sent_copy_saved !== null && open.status === "SENT" && (
                   <p className="text-muted-foreground">
                     {open.sent_copy_saved
@@ -508,6 +582,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                       : "The email was sent, but saving a copy in the Sent folder failed."}
                   </p>
                 )}
+                {followUpDetail(open) && <p>{followUpDetail(open)}</p>}
                 {open.body_sent && (
                   <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
                     <p className="font-medium">{open.subject_sent}</p>
@@ -518,7 +593,50 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                     )}
                   </div>
                 )}
+                {open.follow_ups.map((f) => (
+                  <div key={f.step} className="grid gap-2 rounded-lg border bg-muted/30 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium">
+                        Follow-up {f.step}
+                        {f.subject_sent ? `: ${f.subject_sent}` : ""}
+                      </p>
+                      <span className="text-xs text-muted-foreground">
+                        {f.status === "SENT" && f.sent_at
+                          ? `Sent ${formatDateTime(f.sent_at)}`
+                          : f.status === "WAITING"
+                            ? "Will be tried again"
+                            : f.status === "SENDING"
+                              ? "Sending"
+                              : "Not sent"}
+                      </span>
+                    </div>
+                    {f.error && <p className="text-destructive">{f.error}</p>}
+                    {f.body_sent && (
+                      <pre className="max-h-60 overflow-auto font-sans text-sm whitespace-pre-wrap">{f.body_sent}</pre>
+                    )}
+                  </div>
+                ))}
               </div>
+              {(open.last_reply_id || (canEdit(me.role) && open.status === "SENT" && !open.replied_at)) && (
+                <DialogFooter>
+                  {open.last_reply_id && (
+                    <Button variant="outline" asChild>
+                      <Link href={`/replies?open=${open.last_reply_id}`}>
+                        <InboxIcon data-icon="inline-start" /> Open the conversation
+                      </Link>
+                    </Button>
+                  )}
+                  {canEdit(me.role) && open.status === "SENT" && !open.replied_at && (
+                    <Button
+                      variant="outline"
+                      onClick={() => markReplied.mutate(open.id)}
+                      disabled={markReplied.isPending}
+                    >
+                      <MessageSquareReplyIcon data-icon="inline-start" /> Mark as replied
+                    </Button>
+                  )}
+                </DialogFooter>
+              )}
             </>
           )}
         </DialogContent>
@@ -527,14 +645,43 @@ function Recipients({ campaign }: { campaign: Campaign }) {
   );
 }
 
+/** One short line about a person's replies and follow-ups, for the recipients table. */
+function followUpNote(r: Recipient): string | null {
+  if (r.replied_at) return r.follow_up_stop === "opted_out" ? "Replied: asked to stop" : `Replied ${formatRelative(r.replied_at)}`;
+  if (r.follow_up_stop === "bounced") return "Bounced";
+  if (r.next_follow_up_at) {
+    const sent = r.follow_ups_sent ? `${r.follow_ups_sent} follow-up${r.follow_ups_sent === 1 ? "" : "s"} sent · ` : "";
+    return `${sent}next ${formatRelative(r.next_follow_up_at)}`;
+  }
+  if (r.follow_up_stop) return FOLLOW_UP_STOPS[r.follow_up_stop] ?? r.follow_up_stop;
+  if (r.follow_ups_sent) return `${r.follow_ups_sent} follow-up${r.follow_ups_sent === 1 ? "" : "s"} sent`;
+  return null;
+}
+
+/** The longer version, for the recipient's details. */
+function followUpDetail(r: Recipient): string | null {
+  const parts: string[] = [];
+  if (r.replied_at) parts.push(`Replied ${formatDateTime(r.replied_at)}.`);
+  if (r.follow_up_stop && r.follow_up_stop !== "replied") parts.push(`${FOLLOW_UP_STOPS[r.follow_up_stop] ?? r.follow_up_stop}.`);
+  if (r.next_follow_up_at) parts.push(`Follow-up ${r.follow_ups_sent + 1} is due ${formatRelative(r.next_follow_up_at)}.`);
+  else if (r.replied_at || r.follow_up_stop) parts.push("No more follow-ups.");
+  return parts.length ? parts.join(" ") : null;
+}
+
 function Summary({ campaign: c }: { campaign: Campaign }) {
   const rows: [string, string][] = [
-    ["Groups", c.groups.map((g) => g.name).join(", ") || "—"],
-    ["Sent from", c.mailboxes.map((m) => `${m.display_name} <${m.email}>`).join(", ") || "—"],
+    ["Groups", nameList(c.groups.map((g) => g.name), 5) || "—"],
+    ["Sent from", c.mailboxes.length > 5 ? `${c.mailboxes.length} mailboxes: ${nameList(c.mailboxes.map((m) => m.email), 5)}` : c.mailboxes.map((m) => `${m.display_name} <${m.email}>`).join(", ") || "—"],
     ["When", scheduleSummary(c)],
     ["Gap between emails", `${c.gap_min_seconds / 60}–${c.gap_max_seconds / 60} minutes per mailbox`],
     ["Local time", c.use_lead_timezone ? "Each lead's own timezone" : "The campaign's timezone for everyone"],
     ["Format", c.body_format === "HTML" ? "Rich text (with a plain-text copy)" : "Plain text"],
+    [
+      "Follow-ups",
+      c.follow_ups_enabled && c.follow_ups.length
+        ? c.follow_ups.map((f, i) => followUpTiming(i, f.delay_days)).join("; ")
+        : "Off",
+    ],
   ];
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
@@ -564,6 +711,14 @@ function Summary({ campaign: c }: { campaign: Campaign }) {
           ) : (
             <pre className="font-sans whitespace-pre-wrap text-muted-foreground">{c.body}</pre>
           )}
+          {c.follow_ups_enabled && c.follow_ups.map((f, i) => (
+            <div key={i} className="mt-3 grid gap-1 border-t pt-3">
+              <p className="font-medium">
+                Follow-up {i + 1} <span className="font-normal text-muted-foreground">({followUpTiming(i, f.delay_days)})</span>
+              </p>
+              <pre className="font-sans whitespace-pre-wrap text-muted-foreground">{f.body}</pre>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
@@ -583,12 +738,17 @@ function TestSendDialog({
 }) {
   const [to, setTo] = useState(defaultTo);
   const [mailboxId, setMailboxId] = useState<string>("");
+  const [withFollowUps, setWithFollowUps] = useState(false);
   const send = useMutation({
     mutationFn: () =>
       unwrap(
         api.POST("/api/campaigns/{campaign_id}/test-send", {
           params: { path: { campaign_id: campaign.id } },
-          body: { to, mailbox_id: mailboxId ? Number(mailboxId) : null },
+          body: {
+            to,
+            mailbox_id: mailboxId ? Number(mailboxId) : null,
+            include_follow_ups: withFollowUps && campaign.follow_ups_enabled && campaign.follow_ups.length > 0,
+          },
         }),
       ),
     onSuccess: (r) => {
@@ -630,19 +790,26 @@ function TestSendDialog({
             {campaign.mailboxes.length > 1 && (
               <Field>
                 <FieldLabel htmlFor="test-from">Send from</FieldLabel>
-                <Select value={mailboxId || String(campaign.mailboxes[0].id)} onValueChange={setMailboxId}>
-                  <SelectTrigger id="test-from" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {campaign.mailboxes.map((m) => (
-                      <SelectItem key={m.id} value={String(m.id)}>
-                        {m.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  id="test-from"
+                  className="w-full"
+                  searchLabel="Search mailboxes"
+                  value={mailboxId || String(campaign.mailboxes[0].id)}
+                  onValueChange={setMailboxId}
+                  options={campaign.mailboxes.map((m) => ({ value: String(m.id), label: m.email }))}
+                />
               </Field>
+            )}
+            {campaign.follow_ups_enabled && campaign.follow_ups.length > 0 && (
+              <Label className="flex items-start gap-2 font-normal">
+                <Checkbox className="mt-0.5" checked={withFollowUps} onCheckedChange={(on) => setWithFollowUps(on === true)} />
+                <span className="grid gap-0.5">
+                  <span>Also send the {campaign.follow_ups.length === 1 ? "follow-up" : `${campaign.follow_ups.length} follow-ups`}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Straight away, as replies in the same thread, so you can see how the conversation looks.
+                  </span>
+                </span>
+              </Label>
             )}
             {campaign.mailboxes.length === 0 && (
               <p className="text-sm text-destructive">Choose a mailbox in the campaign settings first.</p>
@@ -662,5 +829,29 @@ function TestSendDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+
+/** What happened after the email left: the send, cPanel's delivery log, bounce emails. */
+function DeliveryTimeline({ events }: { events: Schemas["DeliveryEventOut"][] }) {
+  return (
+    <div className="grid gap-1.5">
+      <p className="font-medium">Delivery</p>
+      <ol className="grid gap-1.5 border-l pl-3">
+        {events.map((e) => (
+          <li key={e.id} className="grid gap-0.5">
+            <span className="flex flex-wrap items-center gap-2">
+              <StatusBadge tone={DELIVERY_STATUS[e.status].tone}>{DELIVERY_STATUS[e.status].label}</StatusBadge>
+              <span className="text-xs text-muted-foreground">
+                {formatDateTime(e.occurred_at)} · {DELIVERY_SOURCE[e.source]}
+                {e.remote_host ? ` · ${e.remote_host}` : ""}
+              </span>
+            </span>
+            {e.response && <span className="font-mono text-xs break-words text-muted-foreground">{e.response}</span>}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }

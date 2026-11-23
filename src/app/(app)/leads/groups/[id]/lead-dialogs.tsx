@@ -28,14 +28,6 @@ import { Input } from "@/components/ui/input";
 import { api, type Group, type Lead, unwrap } from "@/lib/api/client";
 import { errorMessage } from "@/lib/errors";
 
-export const PROVIDER_LABELS: Record<string, string> = {
-  GOOGLE: "Google",
-  MICROSOFT: "Microsoft",
-  OTHER: "Other",
-  UNKNOWN: "No mail server",
-  PENDING: "Not checked",
-};
-
 type LeadFields = { first_name: string; last_name: string; company: string; country: string; timezone: string };
 
 function LeadFieldInputs({ v, set }: { v: LeadFields; set: (k: keyof LeadFields, value: string) => void }) {

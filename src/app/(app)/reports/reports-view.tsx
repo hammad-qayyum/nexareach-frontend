@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { useState } from "react";
+import { Limited } from "@/components/long-list";
 import { PageHeader } from "@/components/page-header";
 import { QueryError } from "@/components/query-error";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,8 +72,13 @@ export function ReportsView() {
 function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
   const { totals } = data;
   const tiles = [
-    { label: "Emails sent", value: totals.sent.toLocaleString() },
+    {
+      label: "Emails sent",
+      value: totals.sent.toLocaleString(),
+      note: totals.follow_ups_sent ? `Including ${totals.follow_ups_sent.toLocaleString()} follow-ups` : undefined,
+    },
     { label: "People reached", value: totals.people.toLocaleString() },
+    { label: "Replied", value: totals.replied.toLocaleString(), note: `${pct(totals.replied, totals.people)} of people reached` },
     { label: "Failed", value: totals.failed.toLocaleString(), note: `${pct(totals.failed, totals.sent + totals.failed)} of attempts` },
     { label: "Skipped", value: totals.skipped.toLocaleString(), note: "Do-not-contact or emailed recently" },
   ];
@@ -80,7 +86,7 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
 
   return (
     <>
-      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {tiles.map((t) => (
           <Card key={t.label} className="gap-1 py-4">
             <CardContent className="grid gap-1 px-4">
@@ -135,11 +141,15 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
             {data.mailboxes.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">Nothing sent in this period.</p>
             ) : (
+              <Limited items={[...data.mailboxes].sort((a, b) => b.sent + b.failed - (a.sent + a.failed))} limit={10} noun="more mailboxes" buttonClassName="mt-3 -ml-2">
+              {(mailboxes) => (
               <ul className="grid gap-4">
-                {data.mailboxes.map((m) => (
+                {mailboxes.map((m) => (
                   <li key={m.id} className="grid gap-1.5">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="truncate">{m.email}</span>
+                      <span className="min-w-0 truncate" title={m.email}>
+                        {m.email}
+                      </span>
                       <span className="shrink-0 tabular-nums">
                         <span className="font-medium">{m.sent.toLocaleString()} sent</span>
                         {m.failed > 0 && <span className="text-muted-foreground"> · {m.failed} failed</span>}
@@ -154,6 +164,8 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
                   </li>
                 ))}
               </ul>
+              )}
+              </Limited>
             )}
           </CardContent>
         </Card>
@@ -167,14 +179,18 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
             {data.campaigns.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">No campaigns in this period.</p>
             ) : (
+              <Limited items={[...data.campaigns].sort((a, b) => b.sent + b.failed - (a.sent + a.failed))} limit={10} noun="more campaigns" buttonClassName="mt-3 -ml-2">
+              {(campaigns) => (
               <ul className="grid gap-4">
-                {data.campaigns.map((c) => (
+                {campaigns.map((c) => (
                   <li key={c.id} className="grid gap-1.5">
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <Link href={`/campaigns/${c.id}`} className="truncate font-medium hover:underline">
+                      <Link href={`/campaigns/${c.id}`} className="min-w-0 truncate font-medium hover:underline" title={c.name}>
                         {c.name}
                       </Link>
-                      <CampaignStatusBadge status={c.status} />
+                      <span className="shrink-0">
+                        <CampaignStatusBadge status={c.status} />
+                      </span>
                     </div>
                     <Progress value={c.total ? (c.done / c.total) * 100 : 0} className="h-1.5" aria-label={`${c.name} progress`} />
                     <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground tabular-nums">
@@ -188,6 +204,8 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
                   </li>
                 ))}
               </ul>
+              )}
+              </Limited>
             )}
           </CardContent>
         </Card>

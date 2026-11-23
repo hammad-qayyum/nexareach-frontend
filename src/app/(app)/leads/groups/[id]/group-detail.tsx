@@ -1,13 +1,14 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftIcon, MegaphoneIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { ArrowLeftIcon, MegaphoneIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, RefreshCwIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Pager } from "@/components/pager";
+import { SearchableSelect } from "@/components/searchable-select";
 import { QueryError } from "@/components/query-error";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,18 +19,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Lead, unwrap } from "@/lib/api/client";
 import { formatDate } from "@/lib/format";
+import { PROVIDER_HINTS, PROVIDER_ORDER, type Provider, providerLabel } from "@/lib/providers";
 import { canEdit, isAdmin, useCurrentUser } from "@/lib/session";
 import { ProviderMix } from "../../import/provider-mix";
-import { AddLeadDialog, EditLeadDialog, exportPerson, ForgetPersonDialog, PROVIDER_LABELS, RenameGroupDialog } from "./lead-dialogs";
+import { BUILT_IN, ColumnsMenu, ExtraFieldHeading, extraId, useHiddenColumns } from "./lead-columns";
+import { AddLeadDialog, EditLeadDialog, exportPerson, ForgetPersonDialog, RenameGroupDialog } from "./lead-dialogs";
 
 const PAGE_SIZE = 50;
 const ALL = "__all__";
-type Provider = NonNullable<Lead["email_provider"]>;
 
 export function GroupDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +46,7 @@ export function GroupDetail() {
   const [renaming, setRenaming] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
   const [forgetting, setForgetting] = useState<Lead | null>(null);
+  const { hidden, setShown } = useHiddenColumns();
 
   const group = useQuery({
     queryKey: ["groups", groupId],
@@ -89,12 +91,29 @@ export function GroupDetail() {
     onError: (e) => toast.error(e.message),
   });
 
+  const recheck = useMutation({
+    mutationFn: () =>
+      unwrap(api.POST("/api/groups/{group_id}/recheck-providers", { params: { path: { group_id: groupId } } })),
+    onSuccess: (r) => {
+      toast.success(
+        `Checked ${r.checked.toLocaleString()} leads. ` +
+          (r.changed ? `${r.changed.toLocaleString()} got a new provider.` : "Nothing changed."),
+      );
+      refresh();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   if (group.error) return <QueryError error={group.error} onRetry={() => group.refetch()} />;
 
-  const customKeys = [...new Set((leads.data?.items ?? []).flatMap((l) => Object.keys(l.custom)))].slice(0, 2);
+  // Every extra field in the group (not just on this page), so columns don't come and go between pages.
+  const extraKeys = facets.data?.custom_keys ?? [...new Set((leads.data?.items ?? []).flatMap((l) => Object.keys(l.custom)))].sort();
+  const shownExtra = extraKeys.filter((k) => !hidden.has(extraId(k)));
+  const show = Object.fromEntries(BUILT_IN.map((c) => [c.id, !hidden.has(c.id)])) as Record<(typeof BUILT_IN)[number]["id"], boolean>;
   const mix = Object.fromEntries((facets.data?.providers ?? []).map((f) => [f.value, f.count]));
+  const providerOptions = PROVIDER_ORDER.filter((p) => p !== "PENDING" && (mix[p] || p === provider));
   const filtered = Boolean(q || provider || country);
-  const columns = 6 + customKeys.length + (editable ? 1 : 0);
+  const columns = 2 + Object.values(show).filter(Boolean).length + shownExtra.length + (editable ? 1 : 0);
 
   return (
     <div className="grid gap-6">
@@ -141,8 +160,16 @@ export function GroupDetail() {
       )}
 
       {Object.keys(mix).length > 0 && (
-        <div className="max-w-xl">
-          <ProviderMix mix={mix} />
+        <div className="flex max-w-3xl flex-wrap items-end gap-x-6 gap-y-2">
+          <div className="max-w-xl min-w-0 flex-1 basis-80">
+            <ProviderMix mix={mix} />
+          </div>
+          {editable && (
+            <Button variant="outline" size="sm" onClick={() => recheck.mutate()} disabled={recheck.isPending}>
+              <RefreshCwIcon data-icon="inline-start" className={recheck.isPending ? "animate-spin" : undefined} />
+              {recheck.isPending ? "Checking… big groups take a minute" : "Recheck providers"}
+            </Button>
+          )}
         </div>
       )}
 
@@ -160,47 +187,37 @@ export function GroupDetail() {
             aria-label="Search leads"
           />
         </div>
-        <Select
+        <SearchableSelect
+          className="w-44"
+          label="Filter by email provider"
+          searchLabel="Search providers"
           value={provider || ALL}
           onValueChange={(v) => {
             setProvider(v === ALL ? "" : (v as Provider));
             setPage(1);
           }}
-        >
-          <SelectTrigger className="w-44" aria-label="Filter by email provider">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All providers</SelectItem>
-            <SelectSeparator />
-            {(["GOOGLE", "MICROSOFT", "OTHER", "UNKNOWN"] as const).map((p) => (
-              <SelectItem key={p} value={p}>
-                {PROVIDER_LABELS[p]}
-                {mix[p] ? ` (${mix[p]})` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
+          options={[
+            { value: ALL, label: "All providers", divider: true },
+            ...providerOptions.map((p) => ({ value: p, label: providerLabel(p), hint: String(mix[p] ?? 0) })),
+          ]}
+        />
+        <SearchableSelect
+          className="w-44"
+          label="Filter by country"
+          searchLabel="Search countries"
           value={country || ALL}
           onValueChange={(v) => {
             setCountry(v === ALL ? "" : v);
             setPage(1);
           }}
-        >
-          <SelectTrigger className="w-44" aria-label="Filter by country">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All countries</SelectItem>
-            <SelectSeparator />
-            {(facets.data?.countries ?? []).map((c) => (
-              <SelectItem key={c.value} value={c.value}>
-                {c.value} ({c.count})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: ALL, label: "All countries", divider: true },
+            ...(facets.data?.countries ?? []).map((c) => ({ value: c.value, label: c.value, hint: String(c.count) })),
+          ]}
+        />
+        <div className="sm:ml-auto">
+          <ColumnsMenu extraKeys={extraKeys} hidden={hidden} setShown={setShown} />
+        </div>
       </div>
 
       {leads.error ? (
@@ -215,13 +232,13 @@ export function GroupDetail() {
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="pl-4">Email</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Timezone</TableHead>
-                  <TableHead>Provider</TableHead>
-                  {customKeys.map((k) => (
-                    <TableHead key={k} className="font-mono text-xs">
-                      {k}
+                  {show.company && <TableHead>Company</TableHead>}
+                  {show.country && <TableHead>Country</TableHead>}
+                  {show.timezone && <TableHead>Timezone</TableHead>}
+                  {show.provider && <TableHead>Provider</TableHead>}
+                  {shownExtra.map((k) => (
+                    <TableHead key={k}>
+                      <ExtraFieldHeading fieldKey={k} />
                     </TableHead>
                   ))}
                   {editable && (
@@ -243,14 +260,18 @@ export function GroupDetail() {
                     <TableRow key={lead.id}>
                       <TableCell className="pl-4">{lead.email}</TableCell>
                       <TableCell>{[lead.first_name, lead.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
-                      <TableCell>{lead.company ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{lead.country ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{lead.timezone?.replace("_", " ") ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {lead.email_provider ? PROVIDER_LABELS[lead.email_provider] : "—"}
-                      </TableCell>
-                      {customKeys.map((k) => (
-                        <TableCell key={k} className="max-w-40 truncate text-muted-foreground">
+                      {show.company && <TableCell>{lead.company ?? "—"}</TableCell>}
+                      {show.country && <TableCell className="text-muted-foreground">{lead.country ?? "—"}</TableCell>}
+                      {show.timezone && (
+                        <TableCell className="text-muted-foreground">{lead.timezone?.replace("_", " ") ?? "—"}</TableCell>
+                      )}
+                      {show.provider && (
+                        <TableCell className="text-muted-foreground" title={PROVIDER_HINTS[lead.email_provider ?? "PENDING"]}>
+                          {lead.email_provider ? providerLabel(lead.email_provider) : "Not checked"}
+                        </TableCell>
+                      )}
+                      {shownExtra.map((k) => (
+                        <TableCell key={k} className="max-w-48 truncate text-muted-foreground" title={lead.custom[k] ? String(lead.custom[k]) : undefined}>
                           {String(lead.custom[k] ?? "—")}
                         </TableCell>
                       ))}

@@ -6,7 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SearchBox, usePaged, useSearch } from "@/components/long-list";
 import { PageHeader } from "@/components/page-header";
+import { Pager } from "@/components/pager";
 import { QueryError } from "@/components/query-error";
 import {
   AlertDialog,
@@ -34,6 +36,7 @@ import { formatDate } from "@/lib/format";
 import { canEdit, useCurrentUser } from "@/lib/session";
 
 export const GROUPS_QUERY_KEY = ["groups"] as const;
+const PAGE_SIZE = 25;
 
 export function GroupsView() {
   const me = useCurrentUser();
@@ -42,6 +45,8 @@ export function GroupsView() {
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState<Group | null>(null);
   const groups = useQuery({ queryKey: GROUPS_QUERY_KEY, queryFn: () => unwrap(api.GET("/api/groups")) });
+  const search = useSearch(groups.data ?? [], (g) => `${g.name} ${g.source ?? ""}`);
+  const paged = usePaged(search.found, PAGE_SIZE);
 
   const remove = useMutation({
     mutationFn: (g: Group) => unwrap(api.DELETE("/api/groups/{group_id}", { params: { path: { group_id: g.id } } })),
@@ -79,6 +84,18 @@ export function GroupsView() {
           {importButton && <EmptyContent>{importButton}</EmptyContent>}
         </Empty>
       ) : (
+        <div className="grid gap-3">
+        {groups.data.length > 10 && (
+          <SearchBox
+            value={search.q}
+            onChange={(q) => {
+              search.setQ(q);
+              paged.setPage(1);
+            }}
+            label="Search groups"
+            className="w-full sm:w-72"
+          />
+        )}
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader>
@@ -94,9 +111,16 @@ export function GroupsView() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groups.data.map((g) => (
+              {paged.shown.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    No groups match.
+                  </TableCell>
+                </TableRow>
+              )}
+              {paged.shown.map((g) => (
                 <TableRow key={g.id} className="cursor-pointer" onClick={() => router.push(`/leads/groups/${g.id}`)}>
-                  <TableCell className="pl-4 font-medium">
+                  <TableCell className="max-w-md pl-4 font-medium whitespace-normal">
                     <Link href={`/leads/groups/${g.id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
                       {g.name}
                     </Link>
@@ -141,6 +165,8 @@ export function GroupsView() {
               ))}
             </TableBody>
           </Table>
+        </div>
+        {paged.total > PAGE_SIZE && <Pager page={paged.page} pageSize={PAGE_SIZE} total={paged.total} onPage={paged.setPage} />}
         </div>
       )}
 

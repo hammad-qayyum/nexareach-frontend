@@ -24,6 +24,17 @@ export const SKIP_REASONS: Record<string, string> = {
   forgotten: "Asked to be forgotten",
 };
 
+/** Why someone's follow-ups stopped early. */
+export const FOLLOW_UP_STOPS: Record<string, string> = {
+  replied: "Replied",
+  opted_out: "Asked not to be emailed (added to do-not-contact)",
+  bounced: "Bounced: the email couldn't be delivered",
+  do_not_contact: "Put on the do-not-contact list",
+  failed: "A follow-up couldn't be sent",
+  cancelled: "Campaign cancelled",
+  forgotten: "Asked to be forgotten",
+};
+
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
   return <StatusBadge tone={CAMPAIGN[status].tone}>{CAMPAIGN[status].label}</StatusBadge>;
 }

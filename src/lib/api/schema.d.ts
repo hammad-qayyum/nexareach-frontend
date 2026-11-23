@@ -405,6 +405,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mailboxes/{mailbox_id}/resume-campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Campaigns
+         * @description Let campaign emails go out from this mailbox again after they were paused (an alert: low inbox rate,
+         *     hard bounces, a blacklist...). Acknowledges the alerts that paused it.
+         */
+        post: operations["resume_campaigns_api_mailboxes__mailbox_id__resume_campaigns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings/footer": {
         parameters: {
             query?: never;
@@ -416,6 +437,24 @@ export interface paths {
         get: operations["read_footer_api_settings_footer_get"];
         /** Update Footer */
         put: operations["update_footer_api_settings_footer_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Invite Settings */
+        get: operations["read_invite_settings_api_settings_invites_get"];
+        /** Update Invite Settings */
+        put: operations["update_invite_settings_api_settings_invites_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -520,6 +559,28 @@ export interface paths {
         get: operations["group_facets_api_groups__group_id__facets_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{group_id}/recheck-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recheck Providers
+         * @description Look up the email provider of every lead in the group again (each domain once).
+         *
+         *     For leads imported before a provider was known by name, or whose company has moved its email.
+         */
+        post: operations["recheck_providers_api_groups__group_id__recheck_providers_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -833,6 +894,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{campaign_id}/recipients/{recipient_id}/replied": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Replied
+         * @description Record a reply by hand (it came another way, or the mailbox has no IMAP). Stops their follow-ups.
+         */
+        post: operations["mark_replied_api_campaigns__campaign_id__recipients__recipient_id__replied_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{campaign_id}/recipients/export": {
         parameters: {
             query?: never;
@@ -950,6 +1031,637 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Replies */
+        get: operations["list_replies_api_replies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count Replies */
+        get: operations["count_replies_api_replies_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Now
+         * @description Read the inboxes now instead of waiting for the next 5-minute check. Runs after the response.
+         */
+        post: operations["check_now_api_replies_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reply */
+        get: operations["get_reply_api_replies__reply_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Read
+         * @description Opened (or put back to unread). Not logged: it only changes what the inbox highlights.
+         */
+        post: operations["mark_read_api_replies__reply_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Done */
+        post: operations["mark_done_api_replies__reply_id__done_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer Reply
+         * @description Send an answer from the mailbox that got the reply, in the same thread.
+         */
+        post: operations["answer_reply_api_replies__reply_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quick-replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Quick Replies */
+        get: operations["list_quick_replies_api_quick_replies_get"];
+        put?: never;
+        /** Create Quick Reply */
+        post: operations["create_quick_reply_api_quick_replies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quick-replies/{quick_reply_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Quick Reply */
+        put: operations["update_quick_reply_api_quick_replies__quick_reply_id__put"];
+        post?: never;
+        /** Delete Quick Reply */
+        delete: operations["delete_quick_reply_api_quick_replies__quick_reply_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warmup/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Schedule */
+        get: operations["read_schedule_api_warmup_schedule_get"];
+        /** Update Schedule */
+        put: operations["update_schedule_api_warmup_schedule_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warmup/helpers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Helpers */
+        get: operations["list_helpers_api_warmup_helpers_get"];
+        put?: never;
+        /** Create Helper */
+        post: operations["create_helper_api_warmup_helpers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warmup/helpers/{helper_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Helper */
+        delete: operations["delete_helper_api_warmup_helpers__helper_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Helper */
+        patch: operations["update_helper_api_warmup_helpers__helper_id__patch"];
+        trace?: never;
+    };
+    "/api/warmup/helpers/{helper_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Helper */
+        post: operations["test_helper_api_warmup_helpers__helper_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warmup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_api_warmup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/alerts/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alert Count */
+        get: operations["alert_count_api_deliverability_alerts_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Alerts */
+        get: operations["list_alerts_api_deliverability_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/alerts/{alert_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge Alert
+         * @description Mark as seen. The banner goes away; the alert stays until the problem is fixed.
+         */
+        post: operations["acknowledge_alert_api_deliverability_alerts__alert_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/alerts/{alert_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume From Alert
+         * @description Acknowledge the alert and let the mailboxes it paused send campaign emails again.
+         */
+        post: operations["resume_from_alert_api_deliverability_alerts__alert_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_api_deliverability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health Results */
+        get: operations["health_results_api_deliverability_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/health/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Health Checks
+         * @description Run every check now (a few seconds) instead of waiting for the daily run.
+         */
+        post: operations["run_health_checks_api_deliverability_health_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/health/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health History */
+        get: operations["health_history_api_deliverability_health_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Server Log */
+        get: operations["server_log_api_deliverability_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/log/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Server Log */
+        get: operations["export_server_log_api_deliverability_log_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/log/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Cpanel Now
+         * @description Read cPanel's delivery log now instead of waiting up to 10 minutes.
+         */
+        post: operations["sync_cpanel_now_api_deliverability_log_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/placement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Placement Tests */
+        get: operations["list_placement_tests_api_deliverability_placement_get"];
+        put?: never;
+        /**
+         * Start Placement Test
+         * @description Send the message to every helper account; results come in over the next few minutes.
+         */
+        post: operations["start_placement_test_api_deliverability_placement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/dmarc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dmarc Overview */
+        get: operations["dmarc_overview_api_deliverability_dmarc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/dmarc/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Dmarc Now
+         * @description Read new DMARC reports now instead of waiting up to 6 hours.
+         */
+        post: operations["check_dmarc_now_api_deliverability_dmarc_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Settings
+         * @description No secret is ever returned, only whether it is set.
+         */
+        get: operations["read_settings_api_deliverability_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/cpanel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Cpanel */
+        put: operations["update_cpanel_api_deliverability_settings_cpanel_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/cpanel/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Cpanel */
+        post: operations["test_cpanel_api_deliverability_settings_cpanel_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/dmarc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Dmarc Mailbox */
+        put: operations["update_dmarc_mailbox_api_deliverability_settings_dmarc_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/dmarc/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Dmarc Mailbox */
+        post: operations["test_dmarc_mailbox_api_deliverability_settings_dmarc_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Checks */
+        put: operations["update_checks_api_deliverability_settings_checks_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deliverability/settings/thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Thresholds */
+        put: operations["update_thresholds_api_deliverability_settings_thresholds_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1001,6 +1713,81 @@ export interface components {
             pending_duplicate: boolean;
             lead: components["schemas"]["LeadOut"] | null;
         };
+        /** AlertCount */
+        AlertCount: {
+            /** Open */
+            open: number;
+            /** Critical */
+            critical: number;
+            /** Active */
+            active: number;
+            /** Paused Mailboxes */
+            paused_mailboxes: number;
+        };
+        /** AlertOut */
+        AlertOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            severity: components["schemas"]["AlertSeverity"];
+            status: components["schemas"]["AlertStatus"];
+            /** Mailbox Id */
+            mailbox_id: number | null;
+            /** Mailbox Email */
+            mailbox_email: string | null;
+            /** Target */
+            target: string;
+            /** Message */
+            message: string;
+            /** Paused Mailboxes */
+            paused_mailboxes: components["schemas"]["PausedMailbox"][];
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Acknowledged By */
+            acknowledged_by: string | null;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Emailed At */
+            emailed_at: string | null;
+            /** Email Error */
+            email_error: string | null;
+        };
+        /**
+         * AlertSeverity
+         * @enum {string}
+         */
+        AlertSeverity: "CRITICAL" | "WARNING";
+        /**
+         * AlertStatus
+         * @enum {string}
+         */
+        AlertStatus: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+        /** AnswerIn */
+        AnswerIn: {
+            /** Body */
+            body: string;
+        };
+        /** AnswerOut */
+        AnswerOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+            reply: components["schemas"]["ReplyDetail"];
+        };
         /** AudienceLead */
         AudienceLead: {
             /** Id */
@@ -1024,6 +1811,17 @@ export interface components {
          * @enum {string}
          */
         BodyFormat: "TEXT" | "HTML";
+        /** BounceRateOut */
+        BounceRateOut: {
+            /** Hard */
+            hard: number;
+            /** Emails */
+            emails: number;
+            /** Window */
+            window: number;
+            /** Pct */
+            pct: number;
+        };
         /** CampaignCount */
         CampaignCount: {
             /** Id */
@@ -1088,6 +1886,13 @@ export interface components {
             body: string;
             /** @default TEXT */
             body_format: components["schemas"]["BodyFormat"];
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpStep"][];
+            /**
+             * Follow Ups Enabled
+             * @default true
+             */
+            follow_ups_enabled: boolean;
             /** Group Ids */
             group_ids?: number[];
             /** Mailbox Ids */
@@ -1105,6 +1910,10 @@ export interface components {
             /** Body */
             body: string;
             body_format: components["schemas"]["BodyFormat"];
+            /** Follow Ups */
+            follow_ups: components["schemas"]["FollowUpStepOut"][];
+            /** Follow Ups Enabled */
+            follow_ups_enabled: boolean;
             /** Groups */
             groups: components["schemas"]["GroupRef"][];
             /** Mailboxes */
@@ -1136,6 +1945,13 @@ export interface components {
             created_at: string;
             counts: components["schemas"]["Counts"];
         };
+        /** CampaignRef */
+        CampaignRef: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
         /**
          * CampaignStatus
          * @enum {string}
@@ -1150,6 +1966,10 @@ export interface components {
             /** Body */
             body?: string | null;
             body_format?: components["schemas"]["BodyFormat"] | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpStep"][] | null;
+            /** Follow Ups Enabled */
+            follow_ups_enabled?: boolean | null;
             /** Group Ids */
             group_ids?: number[] | null;
             /** Mailbox Ids */
@@ -1169,22 +1989,20 @@ export interface components {
             /** End Hour */
             end_hour?: number | null;
         };
-        /** CheckOut */
-        CheckOut: {
-            /** Ok */
-            ok: boolean;
-            /** Detail */
-            detail: string;
+        /** ChecksIn */
+        ChecksIn: {
+            /**
+             * Dkim Selector
+             * @default default
+             */
+            dkim_selector: string;
+            /** Spamhaus Key */
+            spamhaus_key?: string | null;
         };
         /** CodeIn */
         CodeIn: {
             /** Code */
             code: string;
-        };
-        /** CountOut */
-        CountOut: {
-            /** Pending */
-            pending: number;
         };
         /** Counts */
         Counts: {
@@ -1223,6 +2041,72 @@ export interface components {
              * @default 0
              */
             cancelled: number;
+            /**
+             * Follow Ups Sent
+             * @default 0
+             */
+            follow_ups_sent: number;
+            /**
+             * Follow Ups Planned
+             * @default 0
+             */
+            follow_ups_planned: number;
+            /**
+             * Replied
+             * @default 0
+             */
+            replied: number;
+            /**
+             * Opted Out
+             * @default 0
+             */
+            opted_out: number;
+            /**
+             * Bounced
+             * @default 0
+             */
+            bounced: number;
+            /**
+             * Delivered
+             * @default 0
+             */
+            delivered: number;
+            /**
+             * Hard Bounced
+             * @default 0
+             */
+            hard_bounced: number;
+        };
+        /** CpanelIn */
+        CpanelIn: {
+            /**
+             * Host
+             * @default
+             */
+            host: string;
+            /**
+             * Port
+             * @default 2083
+             */
+            port: number;
+            /**
+             * Username
+             * @default
+             */
+            username: string;
+            /** Token */
+            token?: string | null;
+        };
+        /** CpanelSettingsOut */
+        CpanelSettingsOut: {
+            /** Host */
+            host: string;
+            /** Port */
+            port: number;
+            /** Username */
+            username: string;
+            /** Token Set */
+            token_set: boolean;
         };
         /** DayCount */
         DayCount: {
@@ -1236,11 +2120,182 @@ export interface components {
             /** Failed */
             failed: number;
         };
+        /** DayRate */
+        DayRate: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Inbox */
+            inbox: number;
+            /** Total */
+            total: number;
+        };
         /**
          * Decision
          * @enum {string}
          */
         Decision: "KEEP_NEW" | "KEEP_OLD" | "KEEP_BOTH";
+        /** DeliverabilityOverview */
+        DeliverabilityOverview: {
+            /** Period Days */
+            period_days: number;
+            /** Mailboxes */
+            mailboxes: components["schemas"]["MailboxCard"][];
+            /** Alerts */
+            alerts: components["schemas"]["AlertOut"][];
+            /** Health Checked At */
+            health_checked_at: string | null;
+            /** Note */
+            note: string | null;
+            setup: components["schemas"]["SetupState"];
+            /** Provider Mix */
+            provider_mix: components["schemas"]["ProviderShare"][];
+            thresholds: components["schemas"]["Thresholds"];
+        };
+        /** DeliverabilitySettings */
+        DeliverabilitySettings: {
+            cpanel: components["schemas"]["CpanelSettingsOut"];
+            dmarc: components["schemas"]["DmarcMailboxOut"];
+            /** Dkim Selector */
+            dkim_selector: string;
+            /** Spamhaus Key Set */
+            spamhaus_key_set: boolean;
+            thresholds: components["schemas"]["Thresholds"];
+        };
+        /**
+         * DeliveryEventOut
+         * @description One line of the mail-server log (send, cPanel delivery log, or a bounce email).
+         */
+        DeliveryEventOut: {
+            /** Id */
+            id: number;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            source: components["schemas"]["DeliverySource"];
+            status: components["schemas"]["DeliveryStatus"];
+            /** Email */
+            email: string;
+            /** Remote Host */
+            remote_host: string | null;
+            /** Response */
+            response: string | null;
+            /** Queue Id */
+            queue_id: string | null;
+            /** Recipient Id */
+            recipient_id: number | null;
+            /** Follow Up Id */
+            follow_up_id: number | null;
+        };
+        /**
+         * DeliverySource
+         * @enum {string}
+         */
+        DeliverySource: "SMTP" | "CPANEL" | "BOUNCE";
+        /**
+         * DeliveryStatus
+         * @enum {string}
+         */
+        DeliveryStatus: "SENT" | "DELIVERED" | "DEFERRED" | "SOFT_BOUNCE" | "HARD_BOUNCE" | "REJECTED";
+        /** DmarcMailboxIn */
+        DmarcMailboxIn: {
+            /** Email */
+            email?: string | null;
+            /**
+             * Imap Host
+             * @default
+             */
+            imap_host: string;
+            /**
+             * Imap Port
+             * @default 993
+             */
+            imap_port: number;
+            /** Password */
+            password?: string | null;
+        };
+        /** DmarcMailboxOut */
+        DmarcMailboxOut: {
+            /** Email */
+            email: string;
+            /** Imap Host */
+            imap_host: string;
+            /** Imap Port */
+            imap_port: number;
+            /** Password Set */
+            password_set: boolean;
+        };
+        /** DmarcOut */
+        DmarcOut: {
+            /** Days */
+            days: number;
+            /** Rates */
+            rates: components["schemas"]["DmarcRate"][];
+            /** Sources */
+            sources: components["schemas"]["DmarcSource"][];
+            /** Reports */
+            reports: components["schemas"]["DmarcReportOut"][];
+        };
+        /** DmarcRate */
+        DmarcRate: {
+            /** Domain */
+            domain: string;
+            /** Passed */
+            passed: number;
+            /** Total */
+            total: number;
+        };
+        /** DmarcReportOut */
+        DmarcReportOut: {
+            /** Id */
+            id: number;
+            /** Reporter */
+            reporter: string;
+            /** Domain */
+            domain: string;
+            /** Policy */
+            policy: string | null;
+            /**
+             * Begin At
+             * Format: date-time
+             */
+            begin_at: string;
+            /**
+             * End At
+             * Format: date-time
+             */
+            end_at: string;
+            /** Emails */
+            emails: number;
+            /** Passed */
+            passed: number;
+        };
+        /** DmarcSource */
+        DmarcSource: {
+            /** Domain */
+            domain: string;
+            /** Source Ip */
+            source_ip: string;
+            /** Emails */
+            emails: number;
+            /** Passed */
+            passed: number;
+            /** Dkim Pass */
+            dkim_pass: number;
+            /** Spf Pass */
+            spf_pass: number;
+            /** Reporters */
+            reporters: string[];
+            /**
+             * Last Report At
+             * Format: date-time
+             */
+            last_report_at: string;
+        };
         /** DncAddIn */
         DncAddIn: {
             /** Entries */
@@ -1277,6 +2332,14 @@ export interface components {
              */
             created_at: string;
         };
+        /** DoneIn */
+        DoneIn: {
+            /**
+             * Done
+             * @default true
+             */
+            done: boolean;
+        };
         /** DuplicateOut */
         DuplicateOut: {
             /** Id */
@@ -1306,7 +2369,7 @@ export interface components {
          * EmailProvider
          * @enum {string}
          */
-        EmailProvider: "GOOGLE" | "MICROSOFT" | "OTHER" | "UNKNOWN";
+        EmailProvider: "GOOGLE" | "MICROSOFT" | "ZOHO" | "YAHOO" | "ICLOUD" | "PROTON" | "GODADDY" | "TITAN" | "YANDEX" | "AMAZON" | "MIMECAST" | "PROOFPOINT" | "OWN_SERVER" | "OTHER" | "UNKNOWN";
         /** ExclusionsIn */
         ExclusionsIn: {
             /** Lead Ids */
@@ -1358,6 +2421,48 @@ export interface components {
             providers: components["schemas"]["FacetCount"][];
             /** Countries */
             countries: components["schemas"]["FacetCount"][];
+            /** Custom Keys */
+            custom_keys: string[];
+        };
+        /** FollowUpOut */
+        FollowUpOut: {
+            /** Step */
+            step: number;
+            status: components["schemas"]["FollowUpStatus"];
+            /** Sent At */
+            sent_at: string | null;
+            /** Subject Sent */
+            subject_sent: string | null;
+            /** Body Sent */
+            body_sent: string | null;
+            /** Smtp Response */
+            smtp_response: string | null;
+            /** Error */
+            error: string | null;
+            /** Delivery Status */
+            delivery_status?: string | null;
+        };
+        /**
+         * FollowUpStatus
+         * @enum {string}
+         */
+        FollowUpStatus: "SENDING" | "WAITING" | "SENT" | "FAILED";
+        /**
+         * FollowUpStep
+         * @description One follow-up: plain text, sent delay_days after the previous email, as a reply in the same thread.
+         */
+        FollowUpStep: {
+            /** Delay Days */
+            delay_days: number;
+            /** Body */
+            body: string;
+        };
+        /** FollowUpStepOut */
+        FollowUpStepOut: {
+            /** Delay Days */
+            delay_days: number;
+            /** Body */
+            body: string;
         };
         /** FooterSettings */
         FooterSettings: {
@@ -1376,6 +2481,11 @@ export interface components {
             campaign_emails: number;
             /** Duplicate Rows */
             duplicate_rows: number;
+            /**
+             * Replies
+             * @default 0
+             */
+            replies: number;
         };
         /** GroupOut */
         GroupOut: {
@@ -1414,6 +2524,38 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HealthCheckOut */
+        HealthCheckOut: {
+            kind: components["schemas"]["HealthKind"];
+            /** Target */
+            target: string;
+            status: components["schemas"]["HealthStatus"];
+            /** Detail */
+            detail: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+        };
+        /** HealthCheckResults */
+        HealthCheckResults: {
+            /** Checked At */
+            checked_at: string | null;
+            /** Results */
+            results: components["schemas"]["HealthCheckOut"][];
+            /** Note */
+            note: string | null;
+        };
+        /**
+         * HealthKind
+         * @enum {string}
+         */
+        HealthKind: "MX" | "SPF" | "DKIM" | "DMARC" | "CERTIFICATE" | "BLACKLIST";
         /** HealthOut */
         HealthOut: {
             /** Database */
@@ -1422,6 +2564,99 @@ export interface components {
             worker: boolean;
             /** Worker Last Seen */
             worker_last_seen: string | null;
+        };
+        /**
+         * HealthStatus
+         * @enum {string}
+         */
+        HealthStatus: "OK" | "WARN" | "FAIL" | "UNKNOWN";
+        /** HelperIn */
+        HelperIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            provider?: components["schemas"]["HelperProvider"] | null;
+            /** Smtp Host */
+            smtp_host: string;
+            /** Smtp Port */
+            smtp_port: number;
+            smtp_security: components["schemas"]["SmtpSecurity"];
+            /** Smtp Username */
+            smtp_username?: string | null;
+            /** Password */
+            password: string;
+            /** Imap Host */
+            imap_host: string;
+            /**
+             * Imap Port
+             * @default 993
+             */
+            imap_port: number;
+        };
+        /** HelperOut */
+        HelperOut: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            provider: components["schemas"]["HelperProvider"];
+            /** Smtp Host */
+            smtp_host: string;
+            /** Smtp Port */
+            smtp_port: number;
+            smtp_security: components["schemas"]["SmtpSecurity"];
+            /** Smtp Username */
+            smtp_username: string;
+            /** Imap Host */
+            imap_host: string;
+            /** Imap Port */
+            imap_port: number;
+            status: components["schemas"]["MailboxStatus"];
+            /** Last Error */
+            last_error: string | null;
+            /** Last Checked At */
+            last_checked_at: string | null;
+            /** Spam Folder */
+            spam_folder: string | null;
+            /** Received 7D */
+            received_7d: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            connection?: components["schemas"]["app__api__warmup__CheckOut"] | null;
+        };
+        /**
+         * HelperProvider
+         * @enum {string}
+         */
+        HelperProvider: "GMAIL" | "OUTLOOK" | "YAHOO" | "OTHER";
+        /** HelperUpdateIn */
+        HelperUpdateIn: {
+            /** Display Name */
+            display_name?: string | null;
+            provider?: components["schemas"]["HelperProvider"] | null;
+            /** Smtp Host */
+            smtp_host?: string | null;
+            /** Smtp Port */
+            smtp_port?: number | null;
+            smtp_security?: components["schemas"]["SmtpSecurity"] | null;
+            /** Smtp Username */
+            smtp_username?: string | null;
+            /** Password */
+            password?: string | null;
+            /** Imap Host */
+            imap_host?: string | null;
+            /** Imap Port */
+            imap_port?: number | null;
+            status?: components["schemas"]["MailboxStatus"] | null;
         };
         /** ImportIn */
         ImportIn: {
@@ -1479,12 +2714,25 @@ export interface components {
         InviteLinkOut: {
             /** Invite Url */
             invite_url: string;
+            /** Email Sent */
+            email_sent?: boolean | null;
+            /** Email Detail */
+            email_detail?: string | null;
         };
         /** InviteOut */
         InviteOut: {
             user: components["schemas"]["UserOut"];
             /** Invite Url */
             invite_url: string;
+            /** Email Sent */
+            email_sent?: boolean | null;
+            /** Email Detail */
+            email_detail?: string | null;
+        };
+        /** InviteSettings */
+        InviteSettings: {
+            /** Mailbox Id */
+            mailbox_id?: number | null;
         };
         /** LeadData */
         LeadData: {
@@ -1504,6 +2752,26 @@ export interface components {
             custom: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * LeadDetails
+         * @description For the details panel and for filling {{variables}} in quick replies.
+         */
+        LeadDetails: {
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+            /** Sender Name */
+            sender_name: string;
+            /** Campaign Status */
+            campaign_status: string | null;
+            /** Follow Ups Sent */
+            follow_ups_sent: number;
+            /** Follow Up Stop */
+            follow_up_stop: string | null;
+            /** First Email At */
+            first_email_at: string | null;
         };
         /** LeadOut */
         LeadOut: {
@@ -1568,6 +2836,38 @@ export interface components {
                 [key: string]: string;
             } | null;
         };
+        /** LogLine */
+        LogLine: {
+            /** Id */
+            id: number;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            source: components["schemas"]["DeliverySource"];
+            status: components["schemas"]["DeliveryStatus"];
+            /** Email */
+            email: string;
+            /** Remote Host */
+            remote_host: string | null;
+            /** Response */
+            response: string | null;
+            /** Queue Id */
+            queue_id: string | null;
+            /** Recipient Id */
+            recipient_id: number | null;
+            /** Follow Up Id */
+            follow_up_id: number | null;
+            /** Mailbox Email */
+            mailbox_email: string | null;
+            /** Campaign Id */
+            campaign_id: number | null;
+            /** Campaign Name */
+            campaign_name: string | null;
+            /** Follow Up Step */
+            follow_up_step: number | null;
+        };
         /** LoginIn */
         LoginIn: {
             /** Email */
@@ -1582,6 +2882,44 @@ export interface components {
              * @enum {string}
              */
             mfa: "passed" | "verify" | "setup";
+        };
+        /** MailboxCard */
+        MailboxCard: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            status: components["schemas"]["MailboxStatus"];
+            /** Last Error */
+            last_error: string | null;
+            /** Campaigns Paused At */
+            campaigns_paused_at: string | null;
+            /** Campaigns Paused Reason */
+            campaigns_paused_reason: string | null;
+            /** Sent */
+            sent: number;
+            /** Delivered */
+            delivered: number;
+            /** Deferred */
+            deferred: number;
+            /** Soft Bounced */
+            soft_bounced: number;
+            /** Hard Bounced */
+            hard_bounced: number;
+            /** Rejected */
+            rejected: number;
+            bounce_rate: components["schemas"]["BounceRateOut"];
+            /** Dmarc Passed */
+            dmarc_passed: number | null;
+            /** Dmarc Total */
+            dmarc_total: number | null;
+            blacklist: components["schemas"]["HealthStatus"] | null;
+            /** Blacklist Detail */
+            blacklist_detail: string | null;
+            dns: components["schemas"]["HealthStatus"] | null;
+            placement: components["schemas"]["PlacementSummary"] | null;
         };
         /** MailboxCount */
         MailboxCount: {
@@ -1624,6 +2962,21 @@ export interface components {
              * @default 40
              */
             daily_cap: number;
+            /**
+             * Ramp Up Enabled
+             * @default true
+             */
+            ramp_up_enabled: boolean;
+            /**
+             * Ramp Start Limit
+             * @default 5
+             */
+            ramp_start_limit: number;
+            /**
+             * Warmup Enabled
+             * @default false
+             */
+            warmup_enabled: boolean;
         };
         /** MailboxOut */
         MailboxOut: {
@@ -1646,8 +2999,28 @@ export interface components {
             imap_port: number;
             /** Sent Folder */
             sent_folder: string | null;
+            /** Inbox Checked At */
+            inbox_checked_at: string | null;
+            /** Inbox Error */
+            inbox_error: string | null;
             /** Daily Cap */
             daily_cap: number;
+            /** Daily Limit Today */
+            daily_limit_today: number;
+            /** Ramp Up Enabled */
+            ramp_up_enabled: boolean;
+            /** Ramp Start Date */
+            ramp_start_date: string | null;
+            /** Ramp Start Limit */
+            ramp_start_limit: number;
+            /** Ramp Day */
+            ramp_day: number | null;
+            /** Warmup Enabled */
+            warmup_enabled: boolean;
+            /** Campaigns Paused At */
+            campaigns_paused_at: string | null;
+            /** Campaigns Paused Reason */
+            campaigns_paused_reason: string | null;
             status: components["schemas"]["MailboxStatus"];
             /** Last Error */
             last_error: string | null;
@@ -1664,7 +3037,7 @@ export interface components {
             archived_at: string | null;
             /** Can Delete */
             can_delete: boolean;
-            connection?: components["schemas"]["CheckOut"] | null;
+            connection?: components["schemas"]["app__api__mailboxes__CheckOut"] | null;
         };
         /** MailboxRef */
         MailboxRef: {
@@ -1679,6 +3052,8 @@ export interface components {
             next_send_at: string | null;
             /** Daily Cap */
             daily_cap: number;
+            /** Checks Replies */
+            checks_replies: boolean;
         };
         /**
          * MailboxStatus
@@ -1705,6 +3080,50 @@ export interface components {
             /** Daily Cap */
             daily_cap?: number | null;
             status?: components["schemas"]["MailboxStatus"] | null;
+            /** Ramp Up Enabled */
+            ramp_up_enabled?: boolean | null;
+            /** Ramp Start Limit */
+            ramp_start_limit?: number | null;
+            /** Warmup Enabled */
+            warmup_enabled?: boolean | null;
+        };
+        /** MailboxWarmup */
+        MailboxWarmup: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            status: components["schemas"]["MailboxStatus"];
+            /** Warmup Enabled */
+            warmup_enabled: boolean;
+            /** Has Imap */
+            has_imap: boolean;
+            /** Daily Cap */
+            daily_cap: number;
+            /** Daily Limit Today */
+            daily_limit_today: number;
+            /** Ramp Up Enabled */
+            ramp_up_enabled: boolean;
+            /** Ramp Day */
+            ramp_day: number | null;
+            /** Sent Today */
+            sent_today: number;
+            /** Planned Today */
+            planned_today: number;
+            /** Rates */
+            rates: components["schemas"]["ProviderRate"][];
+            /** Rate */
+            rate: number | null;
+            /** Trend */
+            trend: components["schemas"]["DayRate"][];
+            /** Low Rate */
+            low_rate: boolean;
+            /** Campaigns Paused At */
+            campaigns_paused_at: string | null;
+            /** Campaigns Paused Reason */
+            campaigns_paused_reason: string | null;
         };
         /** MeOut */
         MeOut: {
@@ -1716,6 +3135,16 @@ export interface components {
             mfa: "passed" | "verify" | "setup";
             /** Environment */
             environment: string;
+        };
+        /** OverviewOut */
+        OverviewOut: {
+            schedule: components["schemas"]["ScheduleIO"];
+            /** Mailboxes */
+            mailboxes: components["schemas"]["MailboxWarmup"][];
+            /** Active Helpers */
+            active_helpers: number;
+            /** Helpers With Errors */
+            helpers_with_errors: number;
         };
         /** Page[ActivityLogOut] */
         Page_ActivityLogOut_: {
@@ -1752,12 +3181,35 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[LogLine] */
+        Page_LogLine_: {
+            /** Items */
+            items: components["schemas"]["LogLine"][];
+            /** Total */
+            total: number;
+        };
         /** Page[RecipientOut] */
         Page_RecipientOut_: {
             /** Items */
             items: components["schemas"]["RecipientOut"][];
             /** Total */
             total: number;
+        };
+        /** Page[ReplyOut] */
+        Page_ReplyOut_: {
+            /** Items */
+            items: components["schemas"]["ReplyOut"][];
+            /** Total */
+            total: number;
+        };
+        /** PausedMailbox */
+        PausedMailbox: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** Paused */
+            paused: boolean;
         };
         /** PersonIn */
         PersonIn: {
@@ -1767,6 +3219,96 @@ export interface components {
              */
             email: string;
         };
+        /**
+         * PlacementFolder
+         * @enum {string}
+         */
+        PlacementFolder: "INBOX" | "PROMOTIONS" | "SPAM" | "MISSING";
+        /** PlacementIn */
+        PlacementIn: {
+            /** Mailbox Id */
+            mailbox_id: number;
+            /** Campaign Id */
+            campaign_id?: number | null;
+            /**
+             * Use Sample
+             * @default false
+             */
+            use_sample: boolean;
+        };
+        /** PlacementResultOut */
+        PlacementResultOut: {
+            /** Helper Email */
+            helper_email: string;
+            provider: components["schemas"]["HelperProvider"];
+            state: components["schemas"]["PlacementState"];
+            folder: components["schemas"]["PlacementFolder"] | null;
+            /** Error */
+            error: string | null;
+            /** Sent At */
+            sent_at: string | null;
+            /** Checked At */
+            checked_at: string | null;
+        };
+        /**
+         * PlacementState
+         * @enum {string}
+         */
+        PlacementState: "WAITING" | "SENT" | "CHECKED" | "FAILED";
+        /** PlacementSummary */
+        PlacementSummary: {
+            /** Test Id */
+            test_id: number;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Running */
+            running: boolean;
+            /** Inbox */
+            inbox: number;
+            /** Promotions */
+            promotions: number;
+            /** Spam */
+            spam: number;
+            /** Missing */
+            missing: number;
+            /** Failed */
+            failed: number;
+        };
+        /** PlacementTestOut */
+        PlacementTestOut: {
+            /** Id */
+            id: number;
+            /** Mailbox Id */
+            mailbox_id: number;
+            /** Mailbox Email */
+            mailbox_email: string;
+            /** Campaign Id */
+            campaign_id: number | null;
+            /** Campaign Name */
+            campaign_name: string | null;
+            /** Subject */
+            subject: string;
+            status: components["schemas"]["PlacementTestStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Requested By */
+            requested_by: string | null;
+            /** Results */
+            results: components["schemas"]["PlacementResultOut"][];
+        };
+        /**
+         * PlacementTestStatus
+         * @enum {string}
+         */
+        PlacementTestStatus: "RUNNING" | "DONE";
         /** PreviewIn */
         PreviewIn: {
             /**
@@ -1796,6 +3338,16 @@ export interface components {
             available_fields: string[];
             /** Unknown Variables */
             unknown_variables: string[];
+            /**
+             * Lead Count
+             * @default 0
+             */
+            lead_count: number;
+            /**
+             * Leads Without Timezone
+             * @default 0
+             */
+            leads_without_timezone: number;
         };
         /** PreviewVersion */
         PreviewVersion: {
@@ -1805,6 +3357,59 @@ export interface components {
             body: string;
             /** Html */
             html: string | null;
+        };
+        /** ProviderRate */
+        ProviderRate: {
+            provider: components["schemas"]["HelperProvider"];
+            /** Inbox */
+            inbox: number;
+            /** Spam */
+            spam: number;
+            /** Missing */
+            missing: number;
+            /** Rate */
+            rate: number | null;
+        };
+        /** ProviderShare */
+        ProviderShare: {
+            provider: components["schemas"]["EmailProvider"] | null;
+            /** Leads */
+            leads: number;
+        };
+        /** QuickReplyIn */
+        QuickReplyIn: {
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+        };
+        /** QuickReplyOut */
+        QuickReplyOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+        };
+        /** ReadIn */
+        ReadIn: {
+            /**
+             * Read
+             * @default true
+             */
+            read: boolean;
+        };
+        /** RecheckOut */
+        RecheckOut: {
+            /** Checked */
+            checked: number;
+            /** Changed */
+            changed: number;
+            /** Provider Mix */
+            provider_mix: {
+                [key: string]: number;
+            };
         };
         /** RecipientOut */
         RecipientOut: {
@@ -1839,12 +3444,116 @@ export interface components {
             html_sent: string | null;
             /** Sent Copy Saved */
             sent_copy_saved: boolean | null;
+            /** Follow Ups Sent */
+            follow_ups_sent: number;
+            /** Next Follow Up At */
+            next_follow_up_at: string | null;
+            /** Replied At */
+            replied_at: string | null;
+            /** Follow Up Stop */
+            follow_up_stop: string | null;
+            /** Follow Ups */
+            follow_ups: components["schemas"]["FollowUpOut"][];
+            /** Last Reply Id */
+            last_reply_id?: number | null;
+            /** Delivery Status */
+            delivery_status?: string | null;
+            /**
+             * Delivery
+             * @default []
+             */
+            delivery: components["schemas"]["DeliveryEventOut"][];
         };
         /**
          * RecipientStatus
          * @enum {string}
          */
         RecipientStatus: "WAITING" | "SENDING" | "SENT" | "FAILED" | "SKIPPED" | "CANCELLED";
+        /** ReplyDetail */
+        ReplyDetail: {
+            /** Id */
+            id: number;
+            kind: components["schemas"]["ReplyKind"];
+            /** From Email */
+            from_email: string;
+            /** From Name */
+            from_name: string | null;
+            /** Lead Name */
+            lead_name: string | null;
+            /** Company */
+            company: string | null;
+            /** Subject */
+            subject: string;
+            /** Snippet */
+            snippet: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Read At */
+            read_at: string | null;
+            /** Done At */
+            done_at: string | null;
+            /** Answered */
+            answered: boolean;
+            /** Has Attachments */
+            has_attachments: boolean;
+            /** Mailbox Email */
+            mailbox_email: string;
+            campaign: components["schemas"]["CampaignRef"] | null;
+            /** Text */
+            text: string;
+            /** Full Text */
+            full_text: string;
+            /** Thread */
+            thread: components["schemas"]["ThreadItem"][];
+            details: components["schemas"]["LeadDetails"];
+        };
+        /**
+         * ReplyKind
+         * @enum {string}
+         */
+        ReplyKind: "REPLY" | "OPT_OUT";
+        /** ReplyOut */
+        ReplyOut: {
+            /** Id */
+            id: number;
+            kind: components["schemas"]["ReplyKind"];
+            /** From Email */
+            from_email: string;
+            /** From Name */
+            from_name: string | null;
+            /** Lead Name */
+            lead_name: string | null;
+            /** Company */
+            company: string | null;
+            /** Subject */
+            subject: string;
+            /** Snippet */
+            snippet: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Read At */
+            read_at: string | null;
+            /** Done At */
+            done_at: string | null;
+            /** Answered */
+            answered: boolean;
+            /** Has Attachments */
+            has_attachments: boolean;
+            /** Mailbox Email */
+            mailbox_email: string;
+            campaign: components["schemas"]["CampaignRef"] | null;
+        };
+        /**
+         * ReplyState
+         * @enum {string}
+         */
+        ReplyState: "unread" | "open" | "done" | "all";
         /** ResolveIn */
         ResolveIn: {
             decision: components["schemas"]["Decision"];
@@ -1868,6 +3577,17 @@ export interface components {
          * @enum {string}
          */
         Role: "ADMIN" | "MEMBER" | "VIEWER";
+        /** ScheduleIO */
+        ScheduleIO: {
+            /** Timezone */
+            timezone: string;
+            /** Days */
+            days: number[];
+            /** Start Hour */
+            start_hour: number;
+            /** End Hour */
+            end_hour: number;
+        };
         /** SendTestIn */
         SendTestIn: {
             /**
@@ -1877,6 +3597,11 @@ export interface components {
             to: string;
             /** Mailbox Id */
             mailbox_id?: number | null;
+            /**
+             * Include Follow Ups
+             * @default false
+             */
+            include_follow_ups: boolean;
         };
         /** SendTestOut */
         SendTestOut: {
@@ -1884,6 +3609,38 @@ export interface components {
             ok: boolean;
             /** Detail */
             detail: string;
+        };
+        /** SettingTestOut */
+        SettingTestOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+        };
+        /** SetupState */
+        SetupState: {
+            /** Cpanel Configured */
+            cpanel_configured: boolean;
+            /** Cpanel Synced At */
+            cpanel_synced_at: string | null;
+            /** Cpanel Error */
+            cpanel_error: string | null;
+            /** Dmarc Configured */
+            dmarc_configured: boolean;
+            /** Dmarc Email */
+            dmarc_email: string | null;
+            /** Dmarc Checked At */
+            dmarc_checked_at: string | null;
+            /** Dmarc Error */
+            dmarc_error: string | null;
+            /** Spamhaus Configured */
+            spamhaus_configured: boolean;
+            /** Dkim Selector */
+            dkim_selector: string;
+            /** Helpers */
+            helpers: number;
+            /** Alert Email Mailbox */
+            alert_email_mailbox: string | null;
         };
         /** SheetIn */
         SheetIn: {
@@ -1910,6 +3667,72 @@ export interface components {
             campaigns: components["schemas"]["CampaignCount"][];
             totals: components["schemas"]["Totals"];
         };
+        /**
+         * ThreadItem
+         * @description One email in the conversation, ours or theirs, oldest first.
+         */
+        ThreadItem: {
+            /** Kind */
+            kind: string;
+            /** Id */
+            id: number | null;
+            /** At */
+            at: string | null;
+            /** From Email */
+            from_email: string;
+            /** To Email */
+            to_email: string;
+            /** Subject */
+            subject: string | null;
+            /** Text */
+            text: string | null;
+            /** Full Text */
+            full_text?: string | null;
+            /** Html */
+            html?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Sent By */
+            sent_by?: string | null;
+        };
+        /**
+         * Thresholds
+         * @description Editable in Settings (admins). Defaults from the plan.
+         */
+        Thresholds: {
+            /**
+             * Hard Bounce Pct
+             * @default 3
+             */
+            hard_bounce_pct: number;
+            /**
+             * Bounce Window
+             * @default 100
+             */
+            bounce_window: number;
+            /**
+             * Deferred Pct
+             * @default 10
+             */
+            deferred_pct: number;
+            /**
+             * Dmarc Pass Pct
+             * @default 95
+             */
+            dmarc_pass_pct: number;
+            /**
+             * Cert Days
+             * @default 14
+             */
+            cert_days: number;
+            /**
+             * Placement Spam Pct
+             * @default 50
+             */
+            placement_spam_pct: number;
+        };
         /** Totals */
         Totals: {
             /** Sent */
@@ -1920,6 +3743,10 @@ export interface components {
             skipped: number;
             /** People */
             people: number;
+            /** Follow Ups Sent */
+            follow_ups_sent: number;
+            /** Replied */
+            replied: number;
         };
         /** TotpSetupOut */
         TotpSetupOut: {
@@ -1972,6 +3799,47 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** CountOut */
+        app__api__duplicates__CountOut: {
+            /** Pending */
+            pending: number;
+        };
+        /** CheckOut */
+        app__api__mailboxes__CheckOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+        };
+        /** CheckOut */
+        app__api__replies__CheckOut: {
+            /** Started */
+            started: boolean;
+            /** Checked Mailboxes */
+            checked_mailboxes: number;
+        };
+        /** CountOut */
+        app__api__replies__CountOut: {
+            /** Unread */
+            unread: number;
+            /** Open */
+            open: number;
+            /** Done */
+            done: number;
+            /** All */
+            all: number;
+            /** Checked Mailboxes */
+            checked_mailboxes: number;
+            /** Checked At */
+            checked_at: string | null;
+        };
+        /** CheckOut */
+        app__api__warmup__CheckOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
         };
     };
     responses: never;
@@ -2356,8 +4224,13 @@ export interface operations {
     list_logs_api_logs_get: {
         parameters: {
             query?: {
-                actor_user_id?: number | null;
-                action?: string | null;
+                q?: string | null;
+                actor_user_id?: number[];
+                actor_type?: ("USER" | "SYSTEM") | null;
+                action?: string[];
+                campaign_id?: number[];
+                mailbox_id?: number[];
+                problems?: boolean;
                 entity_type?: string | null;
                 entity_id?: string | null;
                 date_from?: string | null;
@@ -2414,8 +4287,13 @@ export interface operations {
     export_logs_api_logs_export_get: {
         parameters: {
             query?: {
-                actor_user_id?: number | null;
-                action?: string | null;
+                q?: string | null;
+                actor_user_id?: number[];
+                actor_type?: ("USER" | "SYSTEM") | null;
+                action?: string[];
+                campaign_id?: number[];
+                mailbox_id?: number[];
+                problems?: boolean;
                 entity_type?: string | null;
                 entity_id?: string | null;
                 date_from?: string | null;
@@ -2674,7 +4552,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CheckOut"];
+                    "application/json": components["schemas"]["app__api__mailboxes__CheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_campaigns_api_mailboxes__mailbox_id__resume_campaigns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailboxOut"];
                 };
             };
             /** @description Validation Error */
@@ -2728,6 +4637,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FooterSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_invite_settings_api_settings_invites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteSettings"];
+                };
+            };
+        };
+    };
+    update_invite_settings_api_settings_invites_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteSettings"];
                 };
             };
             /** @description Validation Error */
@@ -2992,6 +4954,37 @@ export interface operations {
             };
         };
     };
+    recheck_providers_api_groups__group_id__recheck_providers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_lead_api_groups__group_id__leads__lead_id__delete: {
         parameters: {
             query?: never;
@@ -3104,7 +5097,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CountOut"];
+                    "application/json": components["schemas"]["app__api__duplicates__CountOut"];
                 };
             };
         };
@@ -3587,6 +5580,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["RecipientStatus"] | null;
+                /** @description Only people who replied (true) or didn't (false) */
+                replied?: boolean | null;
                 q?: string | null;
                 limit?: number;
                 offset?: number;
@@ -3619,10 +5614,44 @@ export interface operations {
             };
         };
     };
+    mark_replied_api_campaigns__campaign_id__recipients__recipient_id__replied_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: number;
+                recipient_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_recipients_api_campaigns__campaign_id__recipients_export_get: {
         parameters: {
             query?: {
                 status?: components["schemas"]["RecipientStatus"] | null;
+                /** @description Only people who replied (true) or didn't (false) */
+                replied?: boolean | null;
                 q?: string | null;
             };
             header?: never;
@@ -3808,6 +5837,1167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_replies_api_replies_get: {
+        parameters: {
+            query?: {
+                state?: components["schemas"]["ReplyState"];
+                q?: string | null;
+                campaign_id?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_ReplyOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_replies_api_replies_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__api__replies__CountOut"];
+                };
+            };
+        };
+    };
+    check_now_api_replies_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__api__replies__CheckOut"];
+                };
+            };
+        };
+    };
+    get_reply_api_replies__reply_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_read_api_replies__reply_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_done_api_replies__reply_id__done_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoneIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_reply_api_replies__reply_id__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_quick_replies_api_quick_replies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickReplyOut"][];
+                };
+            };
+        };
+    };
+    create_quick_reply_api_quick_replies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickReplyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickReplyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_quick_reply_api_quick_replies__quick_reply_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quick_reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickReplyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickReplyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_quick_reply_api_quick_replies__quick_reply_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quick_reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_schedule_api_warmup_schedule_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleIO"];
+                };
+            };
+        };
+    };
+    update_schedule_api_warmup_schedule_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleIO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_helpers_api_warmup_helpers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelperOut"][];
+                };
+            };
+        };
+    };
+    create_helper_api_warmup_helpers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelperIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelperOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_helper_api_warmup_helpers__helper_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                helper_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_helper_api_warmup_helpers__helper_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                helper_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelperUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelperOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_helper_api_warmup_helpers__helper_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                helper_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelperOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_warmup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewOut"];
+                };
+            };
+        };
+    };
+    alert_count_api_deliverability_alerts_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertCount"];
+                };
+            };
+        };
+    };
+    list_alerts_api_deliverability_alerts_get: {
+        parameters: {
+            query?: {
+                state?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_alert_api_deliverability_alerts__alert_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_from_alert_api_deliverability_alerts__alert_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_deliverability_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilityOverview"];
+                };
+            };
+        };
+    };
+    health_results_api_deliverability_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCheckResults"];
+                };
+            };
+        };
+    };
+    run_health_checks_api_deliverability_health_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCheckResults"];
+                };
+            };
+        };
+    };
+    health_history_api_deliverability_health_history_get: {
+        parameters: {
+            query: {
+                kind: components["schemas"]["HealthKind"];
+                target: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCheckOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    server_log_api_deliverability_log_get: {
+        parameters: {
+            query?: {
+                mailbox_id?: number | null;
+                status?: components["schemas"]["DeliveryStatus"] | null;
+                source?: components["schemas"]["DeliverySource"] | null;
+                campaign_id?: number | null;
+                q?: string | null;
+                days?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_LogLine_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_server_log_api_deliverability_log_export_get: {
+        parameters: {
+            query?: {
+                mailbox_id?: number | null;
+                status?: components["schemas"]["DeliveryStatus"] | null;
+                source?: components["schemas"]["DeliverySource"] | null;
+                campaign_id?: number | null;
+                q?: string | null;
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_cpanel_now_api_deliverability_log_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    list_placement_tests_api_deliverability_placement_get: {
+        parameters: {
+            query?: {
+                mailbox_id?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlacementTestOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_placement_test_api_deliverability_placement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlacementIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlacementTestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dmarc_overview_api_deliverability_dmarc_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DmarcOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_dmarc_now_api_deliverability_dmarc_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    read_settings_api_deliverability_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilitySettings"];
+                };
+            };
+        };
+    };
+    update_cpanel_api_deliverability_settings_cpanel_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CpanelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilitySettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_cpanel_api_deliverability_settings_cpanel_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingTestOut"];
+                };
+            };
+        };
+    };
+    update_dmarc_mailbox_api_deliverability_settings_dmarc_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DmarcMailboxIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilitySettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_dmarc_mailbox_api_deliverability_settings_dmarc_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingTestOut"];
+                };
+            };
+        };
+    };
+    update_checks_api_deliverability_settings_checks_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecksIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilitySettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_thresholds_api_deliverability_settings_thresholds_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Thresholds"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliverabilitySettings"];
                 };
             };
             /** @description Validation Error */

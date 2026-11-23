@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { WarmupView } from "./warmup-view";
 
 export const metadata: Metadata = { title: "Warm-up" };
 
-export default function Page() {
-  return <ComingSoon href="/warmup" />;
+export default function WarmupPage() {
+  return <WarmupView />;
 }

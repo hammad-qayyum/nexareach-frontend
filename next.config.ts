@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const apiTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // The staging copy builds into its own folder so it can run next to the development one.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // A self-contained server bundle for the production Docker image.
   output: "standalone",
   cacheComponents: true,

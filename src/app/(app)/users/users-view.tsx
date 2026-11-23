@@ -32,7 +32,7 @@ import { api, unwrap, type User, type UserStatus } from "@/lib/api/client";
 import { formatDate, formatRelative } from "@/lib/format";
 import { isAdmin, ROLE_LABELS, useCurrentUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { EditUserDialog, InviteDialog, InviteLinkDialog } from "./user-dialogs";
+import { EditUserDialog, InviteDialog, type InviteLink, InviteLinkDialog } from "./user-dialogs";
 import { UserStatusBadge } from "./user-status-badge";
 
 export const USERS_QUERY_KEY = ["users"] as const;
@@ -58,7 +58,7 @@ function UsersAdmin() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const [link, setLink] = useState<{ user: User; url: string } | null>(null);
+  const [link, setLink] = useState<InviteLink | null>(null);
 
   const users = useQuery({ queryKey: USERS_QUERY_KEY, queryFn: () => unwrap(api.GET("/api/users")) });
 
@@ -77,7 +77,8 @@ function UsersAdmin() {
   const resend = useMutation({
     mutationFn: (user: User) =>
       unwrap(api.POST("/api/users/{user_id}/resend-invite", { params: { path: { user_id: user.id } } })),
-    onSuccess: (data, user) => setLink({ user, url: data.invite_url }),
+    onSuccess: (data, user) =>
+      setLink({ user, url: data.invite_url, emailSent: data.email_sent ?? null, emailDetail: data.email_detail ?? null }),
     onError: (e) => toast.error(e.message),
   });
 
@@ -232,10 +233,10 @@ function UsersAdmin() {
       <InviteDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
-        onInvited={(user, url) => {
+        onInvited={(invite) => {
           onUserChanged();
           setInviteOpen(false);
-          setLink({ user, url });
+          setLink(invite);
         }}
       />
       <EditUserDialog
