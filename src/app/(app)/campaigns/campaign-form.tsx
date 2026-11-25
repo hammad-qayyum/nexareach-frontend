@@ -7,6 +7,7 @@ import Link from "next/link";
 import { type ReactNode, useRef, useState } from "react";
 import { PickList } from "@/components/long-list";
 import { RichEditor, textToHtml } from "@/components/rich-editor";
+import { SearchableSelect } from "@/components/searchable-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ export type CampaignValues = {
   send_days: number[];
   start_hour: number;
   end_hour: number;
+  /** Deals' service for leads from this campaign ("" = none), sent when a reply is handed over. */
+  deals_service_key: string;
 };
 
 export const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -111,7 +114,47 @@ function initialValues(c: Campaign | undefined, groupId: number | null): Campaig
     send_days: c?.send_days ?? [0, 1, 2, 3, 4],
     start_hour: c?.start_hour ?? 9,
     end_hour: c?.end_hour ?? 17,
+    deals_service_key: c?.deals_service_key ?? "",
   };
+}
+
+const NO_SERVICE = "none";
+
+/** Deals' services (VAPT, Odoo…), cached for an hour by the server. Hidden until Deals answers, unless a key is
+ *  already saved (then it shows as text if the list can't be loaded). */
+function DealsService({ value, onChange }: { value: string; onChange: (key: string) => void }) {
+  const services = useQuery({
+    queryKey: ["deals", "services"],
+    queryFn: () => unwrap(api.GET("/api/deals/services")),
+    staleTime: 60 * 60_000,
+  });
+  const list = services.data?.services ?? [];
+  if (!list.length && !value) return null;
+  return (
+    <Field className="max-w-xl">
+      <FieldLabel htmlFor="c-deals-service">Deals service</FieldLabel>
+      {list.length ? (
+        <SearchableSelect
+          id="c-deals-service"
+          className="w-full"
+          value={value || NO_SERVICE}
+          onValueChange={(v) => onChange(v === NO_SERVICE ? "" : v)}
+          searchLabel="Search services"
+          options={[
+            { value: NO_SERVICE, label: "None", divider: true },
+            ...list.map((s) => ({ value: s.key, label: s.name })),
+            ...(value && !list.some((s) => s.key === value) ? [{ value, label: value }] : []),
+          ]}
+        />
+      ) : (
+        <Input id="c-deals-service" value={value} onChange={(e) => onChange(e.target.value)} maxLength={50} />
+      )}
+      <FieldDescription>
+        Interested replies from this campaign arrive in Deals with this service, so its rules and reports work by
+        service.
+      </FieldDescription>
+    </Field>
+  );
 }
 
 /** Create or edit a campaign. `paused` locks the recipient groups (the list is fixed once sending starts). */
@@ -304,9 +347,11 @@ export function CampaignForm({
                 required
               />
             </Field>
+            <DealsService value={v.deals_service_key} onChange={(key) => set("deals_service_key", key)} />
             <div className="grid gap-6 md:grid-cols-2">
-              <fieldset className="grid content-start gap-2" disabled={paused}>
+              <fieldset className="min-w-0" disabled={paused}>
                 <legend className="mb-2 text-sm font-medium">Lead groups</legend>
+                <div className="grid gap-2">
                 {groups.isPending ? (
                   <Skeleton className="h-16" />
                 ) : (
@@ -343,9 +388,11 @@ export function CampaignForm({
                   />
                 )}
                 {paused && <p className="text-xs text-muted-foreground">The recipient list is fixed once sending starts.</p>}
+                </div>
               </fieldset>
-              <fieldset className="grid content-start gap-2">
+              <fieldset className="min-w-0">
                 <legend className="mb-2 text-sm font-medium">Send from</legend>
+                <div className="grid gap-2">
                 {mailboxes.isPending ? (
                   <Skeleton className="h-16" />
                 ) : (
@@ -382,6 +429,7 @@ export function CampaignForm({
                 <p className="text-xs text-muted-foreground">
                   With several mailboxes, emails are shared between them so the list finishes sooner.
                 </p>
+                </div>
               </fieldset>
             </div>
           </FieldGroup>
@@ -624,7 +672,7 @@ export function CampaignForm({
               </Field>
             </div>
             {gapWarning && <Warning>{gapWarning}</Warning>}
-            <fieldset className="grid gap-2">
+            <fieldset className="min-w-0">
               <legend className="mb-2 text-sm font-medium">Days</legend>
               <div className="flex flex-wrap gap-1.5">
                 {DAY_LABELS.map((label, d) => {
@@ -692,7 +740,8 @@ export function CampaignForm({
               </Field>
             </div>
             {hoursWarning && <Warning>{hoursWarning}</Warning>}
-            <fieldset className="grid gap-2">
+            {/* Plain block fieldsets: Safari lays out a legend inside a grid/flex fieldset wrongly. */}
+            <fieldset className="min-w-0">
               <legend className="mb-2 text-sm font-medium">Whose time do the days and hours follow?</legend>
               <div className="grid gap-2 md:grid-cols-2">
                 <TimeChoice
@@ -715,7 +764,7 @@ export function CampaignForm({
                 />
               </div>
               {leadCount > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="mt-2 text-xs text-muted-foreground">
                   {noTimezone === 0
                     ? `All ${leadCount.toLocaleString()} leads have a known timezone.`
                     : `${(leadCount - noTimezone).toLocaleString()} of ${leadCount.toLocaleString()} leads have a known timezone. ${

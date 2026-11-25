@@ -125,7 +125,7 @@ export function GroupsView() {
                       {g.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{g.source ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{g.source ?? "unknown"}</TableCell>
                   <TableCell className="text-right tabular-nums">{g.lead_count.toLocaleString()}</TableCell>
                   <TableCell>
                     {g.pending_count > 0 ? (

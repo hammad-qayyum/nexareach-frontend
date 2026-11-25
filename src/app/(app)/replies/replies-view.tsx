@@ -42,6 +42,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type Schemas, unwrap } from "@/lib/api/client";
+import { dealsStage, overdue, usd } from "@/lib/deals";
 import { formatDate, formatDateTime, formatRelative, initials } from "@/lib/format";
 import { REPLY_COUNT_KEY, useReplyCount } from "@/lib/replies";
 import { canEdit, useCurrentUser } from "@/lib/session";
@@ -50,7 +51,7 @@ import { EmailHtml } from "../campaigns/campaign-form";
 import { CampaignStatusBadge, FOLLOW_UP_STOPS } from "../campaigns/campaign-status";
 import { fillTemplate, QuickRepliesDialog } from "./quick-replies";
 
-type ReplyState = "open" | "unread" | "done" | "all";
+type ReplyState = "review" | "open" | "unread" | "done" | "all";
 type ReplyItem = Schemas["ReplyOut"];
 type ReplyDetail = Schemas["ReplyDetail"];
 type ThreadItem = Schemas["ThreadItem"];
@@ -178,6 +179,23 @@ export function RepliesView() {
           {/* The list */}
           <Card className={cn("gap-0 overflow-hidden py-0", PANE_HEIGHT, openId ? "hidden @3xl:flex" : "flex")}>
             <div className="grid gap-2 border-b p-3">
+              {(!!counts.data?.review || state === "review") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setState("review");
+                    setPage(1);
+                  }}
+                  aria-pressed={state === "review"}
+                  className={cn(
+                    "flex items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-sm transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+                    state === "review" ? "border-primary bg-primary/5 font-medium" : "text-muted-foreground",
+                  )}
+                >
+                  Needs review
+                  {!!counts.data?.review && <span className="text-xs tabular-nums">{counts.data.review}</span>}
+                </button>
+              )}
               <nav className="grid grid-cols-4 gap-1 @3xl:grid-cols-2" aria-label="Show">
                 {STATES.map((s) => {
                   const n = counts.data?.[s.value];
@@ -249,7 +267,12 @@ export function RepliesView() {
                 <ul className="divide-y" aria-label="Replies">
                   {list.data.items.map((r) => (
                     <li key={r.id}>
-                      <ReplyRow reply={r} selected={r.id === openId} onSelect={() => select(r.id)} />
+                      <ReplyRow
+                        reply={r}
+                        selected={r.id === openId}
+                        onSelect={() => select(r.id)}
+                        reviewing={state === "review"}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -277,6 +300,170 @@ export function RepliesView() {
   );
 }
 
+const BANDS: Record<string, string> = {
+  auto: "Straight to Deals",
+  review: "Needs a person",
+  low: "Low",
+  zero: "Hard stop",
+};
+
+function ScoreBadge({ score, band }: { score: number; band?: string | null }) {
+  const tone =
+    band === "auto"
+      ? "bg-success/15 text-success"
+      : band === "review"
+        ? "bg-warning/15 text-warning"
+        : "bg-muted text-muted-foreground";
+  return (
+    <span
+      className={cn("shrink-0 rounded px-1.5 font-medium tabular-nums", tone)}
+      title={`Reply score ${score}${band ? ` · ${BANDS[band] ?? band}` : ""}`}
+    >
+      {score}
+    </span>
+  );
+}
+
+const NOT_NOW_REASONS = [
+  { value: "not_interested", label: "Not interested" },
+  { value: "wrong_person", label: "Wrong person" },
+  { value: "too_small", label: "Too small" },
+  { value: "other", label: "Other" },
+] as const;
+type NotNowReason = (typeof NOT_NOW_REASONS)[number]["value"];
+
+/** The reply score, why, and what to do with it: Send to Deals / Not now, or where it stands in Deals. */
+function DealsBar({
+  data,
+  editable,
+  onChange,
+  onFinished,
+}: {
+  data: ReplyDetail;
+  editable: boolean;
+  onChange: (d: ReplyDetail) => void;
+  onFinished: () => void;
+}) {
+  const [notNow, setNotNow] = useState(false);
+  const [reason, setReason] = useState<NotNowReason>("not_interested");
+  const [note, setNote] = useState("");
+  const path = { params: { path: { reply_id: data.id } } };
+  const sendToDeals = useMutation({
+    mutationFn: () => unwrap(api.POST("/api/replies/{reply_id}/send-to-deals", path)),
+    onSuccess: (d) => {
+      onChange(d);
+      toast.success("Sent to Deals. Follow-ups to this person stop once Deals accepts.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const reject = useMutation({
+    mutationFn: () =>
+      unwrap(api.POST("/api/replies/{reply_id}/not-now", { ...path, body: { reason, note } })),
+    onSuccess: (d) => {
+      onChange(d);
+      setNotNow(false);
+      toast.success("Kept in NexaReach.");
+      onFinished();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const h = data.handover;
+  const hardStop = data.kind === "OPT_OUT" || data.score_band === "zero";
+  const canSend = editable && !h && !hardStop && data.review_status !== "rejected";
+
+  return (
+    <div className="grid gap-2 border-b bg-background px-4 py-2.5 text-sm">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        {data.score != null && (
+          <span className="flex items-center gap-1.5">
+            <ScoreBadge score={data.score} band={data.score_band} />
+            <span className="text-muted-foreground">{BANDS[data.score_band ?? ""] ?? "Score"}</span>
+          </span>
+        )}
+        {data.review_status === "pending" && (
+          <span className={cn("text-xs", overdue(data.received_at) ? "font-medium text-destructive" : "text-muted-foreground")}>
+            {overdue(data.received_at) ? "Overdue: waiting over a working day" : `Waiting ${formatRelative(data.received_at)}`}
+          </span>
+        )}
+        {data.review_status === "rejected" && (
+          <span className="text-xs text-muted-foreground">
+            Not now{data.review_reason ? ` (${data.review_reason.replace("_", " ")})` : ""}
+            {data.reviewed_by ? ` · ${data.reviewed_by}` : ""}
+          </span>
+        )}
+        {h && <HandoverLine handover={h} />}
+        {canSend && (
+          <span className="ml-auto flex gap-2">
+            {data.review_status === "pending" && (
+              <Button variant="outline" size="sm" onClick={() => setNotNow((o) => !o)}>
+                Not now
+              </Button>
+            )}
+            <Button size="sm" onClick={() => sendToDeals.mutate()} disabled={sendToDeals.isPending}>
+              <SendIcon data-icon="inline-start" /> {sendToDeals.isPending ? "Sending…" : "Send to Deals"}
+            </Button>
+          </span>
+        )}
+      </div>
+      {!!data.score_rules?.length && (
+        <p className="text-xs text-muted-foreground">Matched: {data.score_rules.join(", ")}</p>
+      )}
+      {notNow && (
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            reject.mutate();
+          }}
+        >
+          <SearchableSelect
+            size="sm"
+            className="w-40"
+            label="Why not now"
+            value={reason}
+            onValueChange={(v) => setReason(v as NotNowReason)}
+            options={NOT_NOW_REASONS.map((r) => ({ value: r.value, label: r.label }))}
+          />
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={reason === "other" ? "Say why (required)" : "Note (optional)"}
+            className="h-8 min-w-0 flex-1"
+            maxLength={500}
+            aria-label="Note"
+          />
+          <Button type="submit" size="sm" disabled={reject.isPending || (reason === "other" && !note.trim())}>
+            Keep in NexaReach
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function HandoverLine({ handover: h }: { handover: NonNullable<ReplyDetail["handover"]> }) {
+  if (h.status === "queued")
+    return <span className="text-xs text-muted-foreground">Being handed to Deals{h.error ? ` (retrying: ${h.error})` : "…"}</span>;
+  if (h.status === "failed") return <span className="text-xs text-destructive">Couldn&apos;t hand over: {h.error}</span>;
+  if (h.status === "blocked") return <span className="text-xs text-muted-foreground">Opted out in Deals: not handed over</span>;
+  return (
+    <span className="text-xs">
+      <span className="font-medium text-primary">In Deals: {dealsStage(h.stage)}</span>
+      {h.stage === "won" && h.value_usd != null && ` · won ${usd(h.value_usd)}`}
+      {h.stage === "lost" && h.lost_reason && ` · ${h.lost_reason}`}
+      {h.approved_by && <span className="text-muted-foreground"> · sent by {h.approved_by}</span>}
+      {h.deals_lead_url && (
+        <>
+          {" · "}
+          <a href={h.deals_lead_url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
+            Open in Deals
+          </a>
+        </>
+      )}
+    </span>
+  );
+}
+
 function EmptyList({ state, searching }: { state: ReplyState; searching: boolean }) {
   return (
     <div className="grid justify-items-center gap-2 p-8 text-center text-sm text-muted-foreground">
@@ -284,7 +471,9 @@ function EmptyList({ state, searching }: { state: ReplyState; searching: boolean
       <p className="font-medium text-foreground">
         {searching
           ? "No replies match."
-          : state === "open"
+          : state === "review"
+            ? "Nothing waiting for review."
+            : state === "open"
             ? "All caught up."
             : state === "unread"
               ? "No unread replies."
@@ -296,7 +485,17 @@ function EmptyList({ state, searching }: { state: ReplyState; searching: boolean
   );
 }
 
-function ReplyRow({ reply: r, selected, onSelect }: { reply: ReplyItem; selected: boolean; onSelect: () => void }) {
+function ReplyRow({
+  reply: r,
+  selected,
+  onSelect,
+  reviewing = false,
+}: {
+  reply: ReplyItem;
+  selected: boolean;
+  onSelect: () => void;
+  reviewing?: boolean;
+}) {
   const unread = !r.read_at && !r.done_at;
   const name = personName(r);
   return (
@@ -324,6 +523,9 @@ function ReplyRow({ reply: r, selected, onSelect }: { reply: ReplyItem; selected
           {r.answered && <CornerUpLeftIcon className="size-3 shrink-0" aria-label="Answered" />}
           {r.done_at && <CheckIcon className="size-3 shrink-0" aria-label="Done" />}
           {r.has_attachments && <PaperclipIcon className="size-3 shrink-0" aria-label="Has attachments" />}
+          {r.handover && <span className="shrink-0 font-medium text-primary">· In Deals</span>}
+          {r.score != null && <ScoreBadge score={r.score} band={r.score_band} />}
+          {reviewing && overdue(r.received_at) && <span className="shrink-0 font-medium text-destructive">Overdue</span>}
         </span>
       </span>
     </button>
@@ -459,6 +661,9 @@ function Conversation({ id, onClose, onFinished }: { id: number; onClose: () => 
           </Button>
         </div>
 
+        {(data.score != null || data.handover || data.review_status) && (
+          <DealsBar data={data} editable={editable} onChange={refresh} onFinished={onFinished} />
+        )}
         <div className="min-h-0 flex-1 overflow-y-auto bg-muted/20">
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 p-4">
             {data.kind === "OPT_OUT" && (

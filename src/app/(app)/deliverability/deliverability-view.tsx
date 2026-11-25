@@ -174,7 +174,8 @@ function AlertsCard({ alerts, editable }: { alerts: AlertItem[]; editable: boole
         <div className="grid gap-1.5">
           <CardTitle>Alerts</CardTitle>
           <CardDescription>
-            Serious problems pause campaign emails from the mailboxes they affect (warm-up carries on). An alert clears
+            With &ldquo;Pause sending on serious problems&rdquo; on (Settings → Alert limits), serious problems pause
+            campaign emails from the mailboxes they affect (warm-up carries on); off, they only warn. An alert clears
             itself once the next check finds the problem fixed; sending stays paused until someone resumes it.
           </CardDescription>
         </div>
@@ -406,7 +407,7 @@ function MailboxCardView({ card: m, overview }: { card: MailboxCard; overview: O
                 <span className="text-xs text-muted-foreground">
                   {m.bounce_rate.hard} in its last {m.bounce_rate.emails} emails
                   {m.bounce_rate.emails < m.bounce_rate.window ? ` (counted out of ${m.bounce_rate.window} until it has sent that many)` : ""}
-                  {" "}· pauses over {limits.hard_bounce_pct}%
+                  {" "}· {limits.auto_pause ? "pauses" : "warns"} over {limits.hard_bounce_pct}%
                 </span>
               </span>
             ) : (

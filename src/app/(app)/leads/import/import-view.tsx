@@ -323,15 +323,19 @@ function ImportWizard() {
                 <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
               </Field>
               <Field>
-                <FieldLabel htmlFor="group-source">Where the leads came from</FieldLabel>
+                <FieldLabel htmlFor="group-source">List source</FieldLabel>
                 <Input
                   id="group-source"
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                   maxLength={200}
-                  placeholder="LinkedIn research, October"
+                  placeholder="Apollo export, Conference attendee list…"
+                  required
                 />
-                <FieldDescription>Kept for data-protection records.</FieldDescription>
+                <FieldDescription>
+                  Where this list came from. Required: it answers &ldquo;why did you email me?&rdquo; (GDPR), and it
+                  goes to Deals with anyone from this list who becomes a lead.
+                </FieldDescription>
               </Field>
             </FieldGroup>
           </CardContent>
@@ -339,7 +343,7 @@ function ImportWizard() {
             <span className="text-sm text-muted-foreground">
               Invalid addresses are left out. Addresses already in the system wait for you to review as duplicates.
             </span>
-            <Button onClick={() => submit.mutate()} disabled={!!mappingError || !name.trim() || submit.isPending}>
+            <Button onClick={() => submit.mutate()} disabled={!!mappingError || !name.trim() || !source.trim() || submit.isPending}>
               {submit.isPending ? "Importing…" : `Import ${parsed.rows.length.toLocaleString()} rows`}
             </Button>
           </CardFooter>
@@ -361,6 +365,8 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
     { label: "New leads", value: result.added },
     { label: "Duplicates to review", value: result.pending_duplicates },
     { label: "Invalid, left out", value: result.invalid_count },
+    // Only while the Deals check is switched on.
+    ...(result.blocked_by_deals != null ? [{ label: "Blocked by Deals", value: result.blocked_by_deals }] : []),
   ];
   return (
     <div className="grid gap-6">
@@ -374,7 +380,7 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
           <CardDescription>The group is ready to use in a campaign.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <dl className={`grid grid-cols-2 gap-4 ${stats.length > 3 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
             {stats.map((s) => (
               <div key={s.label} className="grid gap-1 rounded-lg border p-3">
                 <dt className="text-xs text-muted-foreground">{s.label}</dt>
@@ -383,6 +389,15 @@ function ImportResult({ result, onAnother }: { result: Schemas["ImportOut"]; onA
             ))}
           </dl>
           <ProviderMix mix={result.provider_mix} />
+          {(result.blocked_by_deals ?? 0) > 0 && (
+            <Alert>
+              <AlertDescription>
+                {result.blocked_by_deals!.toLocaleString()} new lead{result.blocked_by_deals === 1 ? " is" : "s are"} on the
+                Deals do-not-email list (already a lead, client or opt-out there). They stay in the group, marked
+                &ldquo;Blocked by Deals&rdquo;, and are never emailed.
+              </AlertDescription>
+            </Alert>
+          )}
           {result.pending_duplicates > 0 && (
             <Alert>
               <AlertDescription>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRightIcon } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -8,8 +10,10 @@ import { SearchableSelect } from "@/components/searchable-select";
 import { QueryError } from "@/components/query-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,10 +45,138 @@ export function SettingsView() {
       ) : (
         <FooterForm key={`${footer.data.business_name}|${footer.data.postal_address}`} initial={footer.data} />
       )}
+      <EmailFooter postalAddress={footer.data?.postal_address ?? ""} />
       <WarmupHours />
       {me.role === "ADMIN" && <InviteEmails />}
+      {canEdit(me.role) && <Integrations admin={me.role === "ADMIN"} />}
       <DeliverabilitySettings />
     </div>
+  );
+}
+
+const EMAIL_FOOTER_KEY = ["settings", "email-footer"] as const;
+
+/** The opt-out line and postal address under every campaign and follow-up email (with List-Unsubscribe). */
+function EmailFooter({ postalAddress }: { postalAddress: string }) {
+  const footer = useQuery({ queryKey: EMAIL_FOOTER_KEY, queryFn: () => unwrap(api.GET("/api/settings/email-footer")) });
+  if (footer.error) return <QueryError error={footer.error} onRetry={() => footer.refetch()} />;
+  if (footer.isPending) return <Skeleton className="h-48 max-w-2xl" />;
+  return <EmailFooterForm key={JSON.stringify(footer.data)} initial={footer.data} postalAddress={postalAddress} />;
+}
+
+function EmailFooterForm({
+  initial,
+  postalAddress,
+}: {
+  initial: Schemas["EmailFooterSettings"];
+  postalAddress: string;
+}) {
+  const editable = canEdit(useCurrentUser().role);
+  const queryClient = useQueryClient();
+  const [enabled, setEnabled] = useState(initial.enabled);
+  const [line, setLine] = useState(initial.optout_line);
+  const save = useMutation({
+    mutationFn: () => unwrap(api.PUT("/api/settings/email-footer", { body: { enabled, optout_line: line } })),
+    onSuccess: (data) => {
+      queryClient.setQueryData(EMAIL_FOOTER_KEY, data);
+      toast.success(data.enabled ? "Every campaign email now ends with the opt-out line and address." : "Footer switched off.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const unchanged = enabled === initial.enabled && line === initial.optout_line;
+  const lineError = line.trim().length < 5;
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle>Opt-out line and footer</CardTitle>
+        <CardDescription>
+          For sending worldwide. When on, every campaign and follow-up email (not warm-up) ends with this line and
+          the postal address above, and carries an &ldquo;Unsubscribe&rdquo; header that mail apps show as a button.
+          A reply saying stop, or the button, puts the person on do-not-contact.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Label className="flex items-start gap-3 font-normal">
+            <Checkbox
+              className="mt-0.5"
+              checked={enabled}
+              onCheckedChange={(on) => setEnabled(on === true)}
+              disabled={!editable}
+            />
+            <span className="grid gap-1">
+              <span className="font-medium">Add the opt-out line and postal address to every campaign email</span>
+              {!postalAddress.trim() && (
+                <span className="text-sm text-destructive">Add the postal address above first.</span>
+              )}
+            </span>
+          </Label>
+          <Field>
+            <FieldLabel htmlFor="optout-line">Opt-out line</FieldLabel>
+            <Input
+              id="optout-line"
+              value={line}
+              onChange={(e) => setLine(e.target.value)}
+              maxLength={300}
+              disabled={!editable}
+              aria-invalid={lineError}
+            />
+            <FieldDescription>The last line of every email, above the address.</FieldDescription>
+          </Field>
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">How the end of an email looks</p>
+            <p className="text-muted-foreground">… your message …</p>
+            <p className="mt-3">{line || "—"}</p>
+            {postalAddress.trim() && <p className="mt-3 whitespace-pre-line text-xs text-muted-foreground">{postalAddress}</p>}
+          </div>
+        </FieldGroup>
+      </CardContent>
+      {editable && (
+        <CardFooter className="justify-end">
+          <Button onClick={() => save.mutate()} disabled={unchanged || lineError || save.isPending}>
+            {save.isPending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
+  );
+}
+
+const LINK_ROW =
+  "flex items-center justify-between gap-4 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50";
+
+/** Links to the Deals connection (admins) and the reply score (admins edit; members can use Try it). */
+function Integrations({ admin }: { admin: boolean }) {
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle>Integrations</CardTitle>
+        <CardDescription>Connections to the company&apos;s other apps.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-2">
+        {admin && (
+          <Link href="/settings/deals" className={LINK_ROW}>
+            <span className="grid gap-0.5">
+              <span className="font-medium">Deals CRM</span>
+              <span className="text-muted-foreground">
+                The do-not-email list, opt-outs, handovers and results, shared with deals.fastnexa.com.
+              </span>
+            </span>
+            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        )}
+        <Link href="/settings/scoring" className={LINK_ROW}>
+          <span className="grid gap-0.5">
+            <span className="font-medium">Reply score</span>
+            <span className="text-muted-foreground">
+              The word rules and cut-offs that decide which replies go to Deals. Never AI.
+            </span>
+          </span>
+          <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -124,7 +256,8 @@ function FooterForm({ initial }: { initial: { business_name: string; postal_addr
       <CardHeader>
         <CardTitle>Business details</CardTitle>
         <CardDescription>
-          Nothing is added to your emails automatically. To include these, type{" "}
+          Unless the opt-out footer below is on, nothing is added to your emails automatically. To include these,
+          type{" "}
           <code className="font-mono text-xs">{"{{business_name}}"}</code> or{" "}
           <code className="font-mono text-xs">{"{{postal_address}}"}</code> in a message. Emails to people in the US
           or Canada must include a postal address and a way to opt out.
@@ -208,7 +341,7 @@ function WarmupHoursForm({ initial }: { initial: Schemas["ScheduleIO"] }) {
       </CardHeader>
       <CardContent>
         <FieldGroup>
-          <fieldset className="grid gap-2" disabled={!editable}>
+          <fieldset className="min-w-0" disabled={!editable}>
             <legend className="mb-2 text-sm font-medium">Days</legend>
             <div className="flex flex-wrap gap-1.5">
               {DAY_LABELS.map((label, d) => {

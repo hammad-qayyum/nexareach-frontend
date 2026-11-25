@@ -65,6 +65,7 @@ export function ReportsView() {
       ) : (
         <Report data={summary.data} days={days} />
       )}
+      <DealsResults days={days} />
     </div>
   );
 }
@@ -211,5 +212,134 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
         </Card>
       </div>
     </>
+  );
+}
+
+type Dimension = "campaign" | "mailbox" | "version" | "lead_list";
+const DIMENSIONS: { value: Dimension; label: string }[] = [
+  { value: "campaign", label: "By campaign" },
+  { value: "mailbox", label: "By mailbox" },
+  { value: "version", label: "By email version" },
+  { value: "lead_list", label: "By lead list" },
+];
+
+/** What cold email earned in Deals: MQLs, pipeline and Won revenue (Deals integration step 5). */
+function DealsResults({ days }: { days: number }) {
+  const [dimension, setDimension] = useState<Dimension>("campaign");
+  // Fixed when the page opens (to the hour), so the query key stays the same while it is open.
+  const [now] = useState(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    return d.getTime();
+  });
+  const dateFrom = new Date(now - days * 24 * 3600 * 1000).toISOString();
+  const report = useQuery({
+    queryKey: ["reports", "deals", dimension, days],
+    queryFn: () => unwrap(api.GET("/api/reports/deals", { params: { query: { dimension, date_from: dateFrom } } })),
+    placeholderData: keepPreviousData,
+  });
+  const exportHref = `/api/reports/deals/export?${new URLSearchParams({ dimension, date_from: dateFrom })}`;
+  const rows = report.data?.rows ?? [];
+  const t = report.data?.total;
+  if (t && t.mqls === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Deals results</CardTitle>
+          <CardDescription>
+            No replies were handed to Deals in this period. Once they are, this shows MQLs, pipeline and Won revenue
+            per campaign, mailbox, email version and lead list.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1.5">
+          <CardTitle>Deals results</CardTitle>
+          <CardDescription>
+            People handed to Deals (MQLs) and what became of them. Revenue per 1,000 emails = Won value ÷ campaign and
+            follow-up emails sent × 1,000.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={dimension} onValueChange={(v) => setDimension(v as Dimension)}>
+            <SelectTrigger className="w-44" aria-label="Break down">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DIMENSIONS.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <a href={exportHref} download className="text-sm text-primary underline-offset-4 hover:underline">
+            Export CSV
+          </a>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {report.error ? (
+          <QueryError error={report.error} onRetry={() => report.refetch()} />
+        ) : !report.data ? (
+          <Skeleton className="h-40" />
+        ) : (
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{DIMENSIONS.find((d) => d.value === dimension)?.label.replace("By ", "")}</TableHead>
+                  <TableHead className="text-right">Emails</TableHead>
+                  <TableHead className="text-right">MQLs</TableHead>
+                  <TableHead className="text-right" title="Scored 80+ / approved from review / sent by hand">
+                    Auto · approved · manual
+                  </TableHead>
+                  <TableHead className="text-right">Reached proposal</TableHead>
+                  <TableHead className="text-right">Won</TableHead>
+                  <TableHead className="text-right">Lost</TableHead>
+                  <TableHead className="text-right">Per 1,000 emails</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...rows, ...(t ? [t] : [])].map((r) => (
+                  <TableRow key={r.key} className={r.key === "total" ? "font-medium" : undefined}>
+                    <TableCell className="max-w-xs truncate" title={r.label}>
+                      {r.label}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.emails_sent.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.mqls}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.auto} · {r.approved} · {r.manual}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.reached_proposal}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.won}
+                      {r.won_usd ? ` ($${r.won_usd.toLocaleString()})` : ""}
+                    </TableCell>
+                    <TableCell
+                      className="text-right tabular-nums"
+                      title={
+                        Object.entries(r.lost_reasons)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join("\n") || undefined
+                      }
+                    >
+                      {r.lost}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.revenue_per_1000 == null ? "—" : `$${r.revenue_per_1000.toLocaleString()}`}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

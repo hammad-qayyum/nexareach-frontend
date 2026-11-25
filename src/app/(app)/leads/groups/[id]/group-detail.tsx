@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/status-dot";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Lead, unwrap } from "@/lib/api/client";
+import { dealsReason } from "@/lib/deals";
 import { formatDate } from "@/lib/format";
 import { PROVIDER_HINTS, PROVIDER_ORDER, type Provider, providerLabel } from "@/lib/providers";
 import { canEdit, isAdmin, useCurrentUser } from "@/lib/session";
@@ -41,6 +43,8 @@ export function GroupDetail() {
   const [q, setQ] = useState("");
   const [provider, setProvider] = useState<Provider | "">("");
   const [country, setCountry] = useState("");
+  // Deals' do-not-email list: "" = everyone, else only blocked people or only the others.
+  const [dealsFilter, setDealsFilter] = useState<"" | "blocked" | "clear">("");
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -57,7 +61,7 @@ export function GroupDetail() {
     queryFn: () => unwrap(api.GET("/api/groups/{group_id}/facets", { params: { path: { group_id: groupId } } })),
   });
   const leads = useQuery({
-    queryKey: ["groups", groupId, "leads", q, provider, country, page],
+    queryKey: ["groups", groupId, "leads", q, provider, country, dealsFilter, page],
     queryFn: () =>
       unwrap(
         api.GET("/api/groups/{group_id}/leads", {
@@ -67,6 +71,7 @@ export function GroupDetail() {
               q: q || undefined,
               provider: provider || undefined,
               country: country || undefined,
+              deals_blocked: dealsFilter ? dealsFilter === "blocked" : undefined,
               limit: PAGE_SIZE,
               offset: (page - 1) * PAGE_SIZE,
             },
@@ -112,7 +117,9 @@ export function GroupDetail() {
   const show = Object.fromEntries(BUILT_IN.map((c) => [c.id, !hidden.has(c.id)])) as Record<(typeof BUILT_IN)[number]["id"], boolean>;
   const mix = Object.fromEntries((facets.data?.providers ?? []).map((f) => [f.value, f.count]));
   const providerOptions = PROVIDER_ORDER.filter((p) => p !== "PENDING" && (mix[p] || p === provider));
-  const filtered = Boolean(q || provider || country);
+  const filtered = Boolean(q || provider || country || dealsFilter);
+  // Only while the Deals check is switched on.
+  const dealsBlocked = facets.data?.deals_blocked;
   const columns = 2 + Object.values(show).filter(Boolean).length + shownExtra.length + (editable ? 1 : 0);
 
   return (
@@ -127,7 +134,7 @@ export function GroupDetail() {
           title={group.data?.name ?? "Group"}
           description={
             group.data &&
-            `${group.data.lead_count.toLocaleString()} leads · imported ${formatDate(group.data.created_at)}${group.data.source ? ` · ${group.data.source}` : ""}`
+            `${group.data.lead_count.toLocaleString()} leads · imported ${formatDate(group.data.created_at)} · source: ${group.data.source ?? "unknown"}`
           }
           actions={
             editable && (
@@ -215,6 +222,22 @@ export function GroupDetail() {
             ...(facets.data?.countries ?? []).map((c) => ({ value: c.value, label: c.value, hint: String(c.count) })),
           ]}
         />
+        {dealsBlocked != null && (
+          <SearchableSelect
+            className="w-48"
+            label="Filter by the Deals do-not-email list"
+            value={dealsFilter || ALL}
+            onValueChange={(v) => {
+              setDealsFilter(v === ALL ? "" : (v as "blocked" | "clear"));
+              setPage(1);
+            }}
+            options={[
+              { value: ALL, label: "Everyone", divider: true },
+              { value: "blocked", label: "Blocked by Deals", hint: String(dealsBlocked) },
+              { value: "clear", label: "Not blocked" },
+            ]}
+          />
+        )}
         <div className="sm:ml-auto">
           <ColumnsMenu extraKeys={extraKeys} hidden={hidden} setShown={setShown} />
         </div>
@@ -258,7 +281,24 @@ export function GroupDetail() {
                 ) : (
                   leads.data.items.map((lead) => (
                     <TableRow key={lead.id}>
-                      <TableCell className="pl-4">{lead.email}</TableCell>
+                      <TableCell className="pl-4">
+                        <span className="flex flex-wrap items-center gap-2">
+                          {lead.email}
+                          {lead.deals_block && (
+                            <StatusBadge tone="bad">
+                              Blocked by Deals: {dealsReason(lead.deals_block.reason, lead.deals_block.until, true)}
+                            </StatusBadge>
+                          )}
+                          {lead.handed_to_deals_at &&
+                            (lead.deals_lead_url ? (
+                              <a href={lead.deals_lead_url} target="_blank" rel="noreferrer" title="Open in Deals">
+                                <StatusBadge tone="info">In Deals</StatusBadge>
+                              </a>
+                            ) : (
+                              <StatusBadge tone="info">In Deals</StatusBadge>
+                            ))}
+                        </span>
+                      </TableCell>
                       <TableCell>{[lead.first_name, lead.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                       {show.company && <TableCell>{lead.company ?? "—"}</TableCell>}
                       {show.country && <TableCell className="text-muted-foreground">{lead.country ?? "—"}</TableCell>}

@@ -66,6 +66,21 @@ const MESSAGES: Record<string, string> = {
   dev_real_mailbox:
     "This is the development copy, so it only sends through Mailpit. Choose mailboxes that use localhost (Mailpit), not a real mail server.",
   no_mailbox: "Choose a mailbox to send from.",
+  deals_handover_off: "Handing replies to Deals is switched off (Settings → Deals).",
+  already_sent_to_deals: "This reply was already sent to Deals.",
+  reply_hard_stop: "This reply is a hard stop (they said no, or it's an opt-out), so it can't go to Deals.",
+  reply_without_campaign: "This reply isn't linked to a campaign email, so it can't go to Deals.",
+  score_thresholds_order: "The auto line must be above the review line.",
+  rule_words_required: "Add at least one word or phrase.",
+  rule_signal_unknown: "Choose a signal.",
+  rule_pattern_invalid: "That pattern can't be used.",
+  rule_not_found: "That rule no longer exists.",
+  note_required: "Say briefly why.",
+  postal_address_required:
+    "Add the postal address in Settings → Business details first: every email carries it while the opt-out line and footer are on.",
+  deals_check_failed: "Couldn't check the Deals do-not-email list. Try again in a few minutes.",
+  deals_secret_required: "Enter the Deals shared secret before switching the do-not-email list on.",
+  deals_url_invalid: "Enter the Deals address as https://… with nothing after the domain.",
   invalid_transition: "The campaign can't do that from its current state.",
   invalid_gap: "The longest gap must be at least the shortest gap.",
   invalid_hours: "The sending window must end after it starts.",
@@ -86,5 +101,8 @@ const MESSAGES: Record<string, string> = {
 };
 
 export function errorMessage(code: string): string {
+  // A few codes carry their explanation after a colon ("rule_pattern_invalid: Not a valid pattern…").
+  const [head, ...rest] = code.split(": ");
+  if (rest.length && MESSAGES[head]) return `${MESSAGES[head]} ${rest.join(": ")}`;
   return MESSAGES[code] ?? MESSAGES.unknown;
 }

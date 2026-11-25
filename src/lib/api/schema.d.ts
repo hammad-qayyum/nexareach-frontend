@@ -462,6 +462,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/email-footer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Email Footer */
+        get: operations["read_email_footer_api_settings_email_footer_get"];
+        /** Update Email Footer */
+        put: operations["update_email_footer_api_settings_email_footer_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/groups": {
         parameters: {
             query?: never;
@@ -991,6 +1009,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reports/deals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deals Report */
+        get: operations["deals_report_api_reports_deals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/deals/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Deals Report */
+        get: operations["export_deals_report_api_reports_deals_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/people/export": {
         parameters: {
             query?: never;
@@ -1153,6 +1205,47 @@ export interface paths {
          * @description Send an answer from the mailbox that got the reply, in the same thread.
          */
         post: operations["answer_reply_api_replies__reply_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}/send-to-deals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send To Deals
+         * @description Hand this person to Deals: "approved" from the review list, or "manual" for a reply under the cut-off.
+         *     Logged with who decided.
+         */
+        post: operations["send_to_deals_api_replies__reply_id__send_to_deals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/replies/{reply_id}/not-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Not Now
+         * @description Keep this reply in NexaReach (off the review list), with a short reason.
+         */
+        post: operations["not_now_api_replies__reply_id__not_now_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1662,6 +1755,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/deals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Deals Settings */
+        get: operations["read_deals_settings_api_settings_deals_get"];
+        /** Update Deals Settings */
+        put: operations["update_deals_settings_api_settings_deals_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/deals/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Deals Connection
+         * @description Calls Deals' service list in test mode: proves the address, the secret and the clock are right.
+         */
+        post: operations["test_deals_connection_api_settings_deals_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deals/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deals Status */
+        get: operations["deals_status_api_deals_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deals/blocklist/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Blocklist Now
+         * @description Fetch Deals' whole do-not-email list now instead of waiting for the worker.
+         */
+        post: operations["sync_blocklist_now_api_deals_blocklist_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/deals/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Deals Services
+         * @description Deals' services for the campaign's Deals service dropdown. Cached for an hour.
+         */
+        get: operations["deals_services_api_deals_services_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scoring/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Score Settings */
+        get: operations["read_score_settings_api_scoring_settings_get"];
+        /** Update Score Settings */
+        put: operations["update_score_settings_api_scoring_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scoring/thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Thresholds */
+        put: operations["update_thresholds_api_scoring_thresholds_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scoring/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rules */
+        get: operations["list_rules_api_scoring_rules_get"];
+        put?: never;
+        /** Create Rule */
+        post: operations["create_rule_api_scoring_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scoring/rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Rule */
+        put: operations["update_rule_api_scoring_rules__rule_id__put"];
+        post?: never;
+        /** Delete Rule */
+        delete: operations["delete_rule_api_scoring_rules__rule_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scoring/try": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try Score
+         * @description Score a pasted reply with the current rules. Nothing is saved.
+         */
+        post: operations["try_score_api_scoring_try_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1897,6 +2176,8 @@ export interface components {
             group_ids?: number[];
             /** Mailbox Ids */
             mailbox_ids?: number[];
+            /** Deals Service Key */
+            deals_service_key?: string | null;
         };
         /** CampaignOut */
         CampaignOut: {
@@ -1932,6 +2213,8 @@ export interface components {
             end_hour: number;
             /** Use Lead Timezone */
             use_lead_timezone: boolean;
+            /** Deals Service Key */
+            deals_service_key?: string | null;
             /** Excluded Count */
             excluded_count: number;
             /** Started At */
@@ -1988,6 +2271,8 @@ export interface components {
             start_hour?: number | null;
             /** End Hour */
             end_hour?: number | null;
+            /** Deals Service Key */
+            deals_service_key?: string | null;
         };
         /** ChecksIn */
         ChecksIn: {
@@ -2041,6 +2326,16 @@ export interface components {
              * @default 0
              */
             cancelled: number;
+            /**
+             * Blocked By Deals
+             * @default 0
+             */
+            blocked_by_deals: number;
+            /**
+             * Handed To Deals
+             * @default 0
+             */
+            handed_to_deals: number;
             /**
              * Follow Ups Sent
              * @default 0
@@ -2131,6 +2426,123 @@ export interface components {
             inbox: number;
             /** Total */
             total: number;
+        };
+        /**
+         * DealsBlockOut
+         * @description On Deals' do-not-email list: never added to a campaign.
+         */
+        DealsBlockOut: {
+            /** Reason */
+            reason: string;
+            /** Until */
+            until: string | null;
+        };
+        /** DealsReportOut */
+        DealsReportOut: {
+            /** Dimension */
+            dimension: string;
+            /** Rows */
+            rows: components["schemas"]["DealsReportRow"][];
+            total: components["schemas"]["DealsReportRow"];
+        };
+        /** DealsReportRow */
+        DealsReportRow: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Emails Sent */
+            emails_sent: number;
+            /** Mqls */
+            mqls: number;
+            /** Auto */
+            auto: number;
+            /** Approved */
+            approved: number;
+            /** Manual */
+            manual: number;
+            /** Reached Proposal */
+            reached_proposal: number;
+            /** Won */
+            won: number;
+            /** Won Usd */
+            won_usd: number;
+            /** Lost */
+            lost: number;
+            /** Lost Reasons */
+            lost_reasons: {
+                [key: string]: number;
+            };
+            /** Revenue Per 1000 */
+            revenue_per_1000: number | null;
+        };
+        /** DealsSettingsIn */
+        DealsSettingsIn: {
+            /**
+             * Url
+             * @default https://deals.fastnexa.com
+             */
+            url: string;
+            /** Secret */
+            secret?: string | null;
+            /**
+             * Blocklist Enabled
+             * @default false
+             */
+            blocklist_enabled: boolean;
+            /**
+             * Stale Minutes
+             * @default 30
+             */
+            stale_minutes: number;
+            /**
+             * Optouts Enabled
+             * @default false
+             */
+            optouts_enabled: boolean;
+            /**
+             * Handover Enabled
+             * @default false
+             */
+            handover_enabled: boolean;
+            /**
+             * Events Enabled
+             * @default false
+             */
+            events_enabled: boolean;
+        };
+        /** DealsSettingsOut */
+        DealsSettingsOut: {
+            /** Url */
+            url: string;
+            /** Secret Set */
+            secret_set: boolean;
+            /** Secret Set At */
+            secret_set_at: string | null;
+            /** Blocklist Enabled */
+            blocklist_enabled: boolean;
+            /** Stale Minutes */
+            stale_minutes: number;
+            /** Optouts Enabled */
+            optouts_enabled: boolean;
+            /** Handover Enabled */
+            handover_enabled: boolean;
+            /** Events Enabled */
+            events_enabled: boolean;
+        };
+        /** DealsStatusOut */
+        DealsStatusOut: {
+            blocklist: components["schemas"]["SyncStateOut"];
+            optouts: components["schemas"]["OptoutsStateOut"];
+            events: components["schemas"]["EventsStateOut"];
+            /** Handovers */
+            handovers: {
+                [key: string]: number;
+            };
+            /** Campaigns Held */
+            campaigns_held: boolean;
+            /** Test Mode */
+            test_mode: boolean;
         };
         /**
          * Decision
@@ -2365,11 +2777,27 @@ export interface components {
          * @enum {string}
          */
         DuplicateStatus: "PENDING" | "KEPT_NEW" | "KEPT_OLD" | "KEPT_BOTH";
+        /** EmailFooterSettings */
+        EmailFooterSettings: {
+            /** Enabled */
+            enabled: boolean;
+            /** Optout Line */
+            optout_line: string;
+        };
         /**
          * EmailProvider
          * @enum {string}
          */
         EmailProvider: "GOOGLE" | "MICROSOFT" | "ZOHO" | "YAHOO" | "ICLOUD" | "PROTON" | "GODADDY" | "TITAN" | "YANDEX" | "AMAZON" | "MIMECAST" | "PROOFPOINT" | "OWN_SERVER" | "OTHER" | "UNKNOWN";
+        /** EventsStateOut */
+        EventsStateOut: {
+            /** Last Success At */
+            last_success_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Error At */
+            last_error_at: string | null;
+        };
         /** ExclusionsIn */
         ExclusionsIn: {
             /** Lead Ids */
@@ -2423,6 +2851,8 @@ export interface components {
             countries: components["schemas"]["FacetCount"][];
             /** Custom Keys */
             custom_keys: string[];
+            /** Deals Blocked */
+            deals_blocked?: number | null;
         };
         /** FollowUpOut */
         FollowUpOut: {
@@ -2523,6 +2953,28 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HandoverOut
+         * @description Handed to Deals (integration step 4): queued, created, existing, blocked or failed.
+         */
+        HandoverOut: {
+            /** Status */
+            status: string;
+            /** Band */
+            band: string;
+            /** Approved By */
+            approved_by: string | null;
+            /** Deals Lead Url */
+            deals_lead_url: string | null;
+            /** Error */
+            error: string | null;
+            /** Stage */
+            stage?: string | null;
+            /** Value Usd */
+            value_usd?: number | null;
+            /** Lost Reason */
+            lost_reason?: string | null;
         };
         /** HealthCheckOut */
         HealthCheckOut: {
@@ -2682,6 +3134,8 @@ export interface components {
             provider_mix: {
                 [key: string]: number;
             };
+            /** Blocked By Deals */
+            blocked_by_deals?: number | null;
         };
         /** InvalidRow */
         InvalidRow: {
@@ -2799,6 +3253,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            deals_block?: components["schemas"]["DealsBlockOut"] | null;
+            /** Handed To Deals At */
+            handed_to_deals_at?: string | null;
+            /** Deals Lead Url */
+            deals_lead_url?: string | null;
         };
         /** LeadRowIn */
         LeadRowIn: {
@@ -3136,6 +3595,32 @@ export interface components {
             /** Environment */
             environment: string;
         };
+        /** NotNowIn */
+        NotNowIn: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "not_interested" | "wrong_person" | "too_small" | "other";
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** OptoutsStateOut */
+        OptoutsStateOut: {
+            /** Last Success At */
+            last_success_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Error At */
+            last_error_at: string | null;
+            /** Waiting */
+            waiting: number;
+            /** Failed Batches */
+            failed_batches: number;
+        };
         /** OverviewOut */
         OverviewOut: {
             schedule: components["schemas"]["ScheduleIO"];
@@ -3411,6 +3896,17 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** RecipientDealsOut */
+        RecipientDealsOut: {
+            /** Status */
+            status: string;
+            /** Lead Url */
+            lead_url: string | null;
+            /** Stage */
+            stage: string | null;
+            /** Value Usd */
+            value_usd: number | null;
+        };
         /** RecipientOut */
         RecipientOut: {
             /** Id */
@@ -3463,12 +3959,13 @@ export interface components {
              * @default []
              */
             delivery: components["schemas"]["DeliveryEventOut"][];
+            deals?: components["schemas"]["RecipientDealsOut"] | null;
         };
         /**
          * RecipientStatus
          * @enum {string}
          */
-        RecipientStatus: "WAITING" | "SENDING" | "SENT" | "FAILED" | "SKIPPED" | "CANCELLED";
+        RecipientStatus: "WAITING" | "SENDING" | "SENT" | "FAILED" | "SKIPPED" | "CANCELLED" | "BLOCKED_BY_DEALS" | "HANDED_TO_DEALS";
         /** ReplyDetail */
         ReplyDetail: {
             /** Id */
@@ -3502,6 +3999,21 @@ export interface components {
             /** Mailbox Email */
             mailbox_email: string;
             campaign: components["schemas"]["CampaignRef"] | null;
+            /** Score */
+            score?: number | null;
+            /** Score Band */
+            score_band?: string | null;
+            /** Score Rules */
+            score_rules?: string[] | null;
+            /** Review Status */
+            review_status?: string | null;
+            /** Review Reason */
+            review_reason?: string | null;
+            /** Reviewed By */
+            reviewed_by?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            handover?: components["schemas"]["HandoverOut"] | null;
             /** Text */
             text: string;
             /** Full Text */
@@ -3548,12 +4060,27 @@ export interface components {
             /** Mailbox Email */
             mailbox_email: string;
             campaign: components["schemas"]["CampaignRef"] | null;
+            /** Score */
+            score?: number | null;
+            /** Score Band */
+            score_band?: string | null;
+            /** Score Rules */
+            score_rules?: string[] | null;
+            /** Review Status */
+            review_status?: string | null;
+            /** Review Reason */
+            review_reason?: string | null;
+            /** Reviewed By */
+            reviewed_by?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            handover?: components["schemas"]["HandoverOut"] | null;
         };
         /**
          * ReplyState
          * @enum {string}
          */
-        ReplyState: "unread" | "open" | "done" | "all";
+        ReplyState: "review" | "unread" | "open" | "done" | "all";
         /** ResolveIn */
         ResolveIn: {
             decision: components["schemas"]["Decision"];
@@ -3577,6 +4104,56 @@ export interface components {
          * @enum {string}
          */
         Role: "ADMIN" | "MEMBER" | "VIEWER";
+        /** RuleIn */
+        RuleIn: {
+            /** Name */
+            name: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "words" | "regex" | "signal";
+            /** Words */
+            words?: string[];
+            /** Pattern */
+            pattern?: string | null;
+            /** Signal */
+            signal?: string | null;
+            /** Points */
+            points: number;
+            /** Hard Stop */
+            hard_stop?: ("no" | "machine") | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Position */
+            position?: number | null;
+        };
+        /** RuleOut */
+        RuleOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Words */
+            words: string[];
+            /** Pattern */
+            pattern: string | null;
+            /** Signal */
+            signal: string | null;
+            /** Points */
+            points: number;
+            /** Hard Stop */
+            hard_stop: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Position */
+            position: number;
+        };
         /** ScheduleIO */
         ScheduleIO: {
             /** Timezone */
@@ -3587,6 +4164,17 @@ export interface components {
             start_hour: number;
             /** End Hour */
             end_hour: number;
+        };
+        /** ScoreSettingsIO */
+        ScoreSettingsIO: {
+            /** Enabled */
+            enabled: boolean;
+            /** Auto Threshold */
+            auto_threshold: number;
+            /** Review Threshold */
+            review_threshold: number;
+            /** Free Mail Domains */
+            free_mail_domains: string[];
         };
         /** SendTestIn */
         SendTestIn: {
@@ -3609,6 +4197,20 @@ export interface components {
             ok: boolean;
             /** Detail */
             detail: string;
+        };
+        /** ServiceOut */
+        ServiceOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
+        /** ServicesOut */
+        ServicesOut: {
+            /** Services */
+            services: components["schemas"]["ServiceOut"][];
+            /** Error */
+            error?: string | null;
         };
         /** SettingTestOut */
         SettingTestOut: {
@@ -3667,6 +4269,26 @@ export interface components {
             campaigns: components["schemas"]["CampaignCount"][];
             totals: components["schemas"]["Totals"];
         };
+        /** SyncStateOut */
+        SyncStateOut: {
+            /** Last Success At */
+            last_success_at: string | null;
+            /** Last Full At */
+            last_full_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Error At */
+            last_error_at: string | null;
+            /** Active Blocks */
+            active_blocks: number;
+        };
+        /** TestOut */
+        TestOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+        };
         /**
          * ThreadItem
          * @description One email in the conversation, ours or theirs, oldest first.
@@ -3703,6 +4325,11 @@ export interface components {
          */
         Thresholds: {
             /**
+             * Auto Pause
+             * @default false
+             */
+            auto_pause: boolean;
+            /**
              * Hard Bounce Pct
              * @default 3
              */
@@ -3733,6 +4360,13 @@ export interface components {
              */
             placement_spam_pct: number;
         };
+        /** ThresholdsIn */
+        ThresholdsIn: {
+            /** Auto Threshold */
+            auto_threshold: number;
+            /** Review Threshold */
+            review_threshold: number;
+        };
         /** Totals */
         Totals: {
             /** Sent */
@@ -3754,6 +4388,31 @@ export interface components {
             secret: string;
             /** Otpauth Uri */
             otpauth_uri: string;
+        };
+        /** TryIn */
+        TryIn: {
+            /** Text */
+            text: string;
+            /**
+             * Sender
+             * @default
+             */
+            sender: string;
+            /** Cc */
+            cc?: string[];
+        };
+        /** TryOut */
+        TryOut: {
+            /** Score */
+            score: number;
+            /** Band */
+            band: string;
+            /** Matched */
+            matched: string[];
+            /** Hard Stop */
+            hard_stop: string | null;
+            /** New Text */
+            new_text: string;
         };
         /** UserOut */
         UserOut: {
@@ -3821,6 +4480,8 @@ export interface components {
         };
         /** CountOut */
         app__api__replies__CountOut: {
+            /** Review */
+            review: number;
             /** Unread */
             unread: number;
             /** Open */
@@ -4703,6 +5364,59 @@ export interface operations {
             };
         };
     };
+    read_email_footer_api_settings_email_footer_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailFooterSettings"];
+                };
+            };
+        };
+    };
+    update_email_footer_api_settings_email_footer_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailFooterSettings"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailFooterSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_groups_api_groups_get: {
         parameters: {
             query?: never;
@@ -4824,6 +5538,7 @@ export interface operations {
                 q?: string | null;
                 provider?: components["schemas"]["EmailProvider"] | null;
                 country?: string | null;
+                deals_blocked?: boolean | null;
                 limit?: number;
                 offset?: number;
             };
@@ -5784,6 +6499,72 @@ export interface operations {
             };
         };
     };
+    deals_report_api_reports_deals_get: {
+        parameters: {
+            query?: {
+                dimension?: "campaign" | "mailbox" | "version" | "lead_list";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DealsReportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_deals_report_api_reports_deals_export_get: {
+        parameters: {
+            query?: {
+                dimension?: "campaign" | "mailbox" | "version" | "lead_list";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_person_api_people_export_post: {
         parameters: {
             query?: never;
@@ -6048,6 +6829,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_to_deals_api_replies__reply_id__send_to_deals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    not_now_api_replies__reply_id__not_now_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotNowIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyDetail"];
                 };
             };
             /** @description Validation Error */
@@ -6998,6 +7845,375 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeliverabilitySettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_deals_settings_api_settings_deals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DealsSettingsOut"];
+                };
+            };
+        };
+    };
+    update_deals_settings_api_settings_deals_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DealsSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DealsSettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_deals_connection_api_settings_deals_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestOut"];
+                };
+            };
+        };
+    };
+    deals_status_api_deals_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DealsStatusOut"];
+                };
+            };
+        };
+    };
+    sync_blocklist_now_api_deals_blocklist_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestOut"];
+                };
+            };
+        };
+    };
+    deals_services_api_deals_services_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServicesOut"];
+                };
+            };
+        };
+    };
+    read_score_settings_api_scoring_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreSettingsIO"];
+                };
+            };
+        };
+    };
+    update_score_settings_api_scoring_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreSettingsIO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreSettingsIO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_thresholds_api_scoring_thresholds_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThresholdsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreSettingsIO"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rules_api_scoring_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"][];
+                };
+            };
+        };
+    };
+    create_rule_api_scoring_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_rule_api_scoring_rules__rule_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_rule_api_scoring_rules__rule_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    try_score_api_scoring_try_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TryOut"];
                 };
             };
             /** @description Validation Error */

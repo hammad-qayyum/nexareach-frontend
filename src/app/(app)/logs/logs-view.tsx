@@ -337,7 +337,7 @@ export function LogsView() {
                 options={mailboxOpts}
               />
             </FilterField>
-            <fieldset className="grid gap-2">
+            <fieldset className="min-w-0">
               <legend className="mb-1.5 text-xs text-muted-foreground">Done by</legend>
               <div className="grid grid-cols-3 gap-1.5">
                 {DONE_BY.map((d) => (
@@ -534,3 +534,4 @@ function FilterField({ label, id, children }: { label: string; id: string; child
     </div>
   );
 }
+

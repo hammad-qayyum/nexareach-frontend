@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import { QueryError } from "@/components/query-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, type Schemas, unwrap } from "@/lib/api/client";
 import { DELIVERABILITY_KEY } from "@/lib/deliverability";
@@ -344,12 +346,13 @@ function ChecksForm({ settings }: { settings: Settings }) {
 }
 
 type Thresholds = Settings["thresholds"];
-const LIMITS: { key: keyof Thresholds; label: string; unit: string; help: string; min: number; max: number }[] = [
+type Limit = Exclude<keyof Thresholds, "auto_pause">;
+const LIMITS: { key: Limit; label: string; unit: string; help: string; min: number; max: number }[] = [
   {
     key: "hard_bounce_pct",
     label: "Hard bounces",
     unit: "%",
-    help: "of a mailbox's recent emails: over this pauses its campaign emails",
+    help: "of a mailbox's recent emails: over this opens an alert",
     min: 0.5,
     max: 50,
   },
@@ -369,14 +372,18 @@ const LIMITS: { key: keyof Thresholds; label: string; unit: string; help: string
 
 function ThresholdsForm({ initial }: { initial: Thresholds }) {
   const admin = isAdmin(useCurrentUser().role);
-  const [v, setV] = useState<Record<keyof Thresholds, string>>(
-    Object.fromEntries(LIMITS.map((l) => [l.key, String(initial[l.key])])) as Record<keyof Thresholds, string>,
+  const [v, setV] = useState<Record<Limit, string>>(
+    Object.fromEntries(LIMITS.map((l) => [l.key, String(initial[l.key])])) as Record<Limit, string>,
   );
+  const [autoPause, setAutoPause] = useState(initial.auto_pause ?? false);
   const save = useSave(
     () =>
       unwrap(
         api.PUT("/api/deliverability/settings/thresholds", {
-          body: Object.fromEntries(LIMITS.map((l) => [l.key, Number(v[l.key])])) as Thresholds,
+          body: {
+            ...(Object.fromEntries(LIMITS.map((l) => [l.key, Number(v[l.key])])) as Record<Limit, number>),
+            auto_pause: autoPause,
+          },
         }),
       ),
     "Alert limits saved.",
@@ -385,17 +392,33 @@ function ThresholdsForm({ initial }: { initial: Thresholds }) {
     const n = Number(v[l.key]);
     return !v[l.key] || Number.isNaN(n) || n < l.min || n > l.max;
   });
-  const unchanged = LIMITS.every((l) => Number(v[l.key]) === initial[l.key]);
+  const unchanged =
+    autoPause === (initial.auto_pause ?? false) && LIMITS.every((l) => Number(v[l.key]) === initial[l.key]);
   return (
     <Card className="max-w-2xl">
       <CardHeader>
         <CardTitle>Alert limits</CardTitle>
         <CardDescription>
-          When deliverability alerts open. Blacklistings and broken DNS records always pause sending; these numbers
-          tune the rest.
+          When deliverability alerts open. Every alert shows here and is emailed to the admins (once an invite
+          mailbox is chosen).
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-6">
+        <Label className="flex items-start gap-3 font-normal">
+          <Checkbox
+            className="mt-0.5"
+            checked={autoPause}
+            onCheckedChange={(on) => setAutoPause(on === true)}
+            disabled={!admin}
+          />
+          <span className="grid gap-1">
+            <span className="font-medium">Pause sending on serious problems</span>
+            <span className="text-sm text-muted-foreground">
+              Too many hard bounces, a blacklisting, broken DNS records or a low warm-up inbox rate stop that
+              mailbox&apos;s campaign emails until someone presses Resume. Off: they only warn.
+            </span>
+          </span>
+        </Label>
         <div className="grid gap-4 sm:grid-cols-2">
           {LIMITS.map((l) => (
             <Field key={l.key}>

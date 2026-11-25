@@ -53,6 +53,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Campaign, type Recipient, type RecipientStatus, type Schemas, unwrap } from "@/lib/api/client";
 import { DELIVERY_SOURCE, DELIVERY_STATUS, type DeliveryStatus } from "@/lib/deliverability";
+import { dealsStage, usd } from "@/lib/deals";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { canEdit, useCurrentUser } from "@/lib/session";
 import { Audience } from "../audience";
@@ -63,7 +64,7 @@ import {
   RECIPIENT_STATUSES,
   RecipientStatusBadge,
   recipientLabel,
-  SKIP_REASONS,
+  skipReason,
 } from "../campaign-status";
 import { doneShare } from "../campaigns-view";
 
@@ -304,6 +305,9 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
     { label: "Replied", value: c.counts.replied },
     { label: "Failed", value: c.counts.failed },
     { label: "Skipped", value: c.counts.skipped },
+    // Only with the Deals check switched on: people on Deals' do-not-email list, never emailed.
+    ...(c.counts.blocked_by_deals ? [{ label: "Blocked by Deals", value: c.counts.blocked_by_deals }] : []),
+    ...(c.counts.handed_to_deals ? [{ label: "Handed to Deals", value: c.counts.handed_to_deals }] : []),
   ];
   const hasFollowUps = (c.follow_ups_enabled && c.follow_ups.length > 0) || c.counts.follow_ups_sent > 0;
   const firstEmailsDone = c.counts.waiting + c.counts.sending === 0;
@@ -325,7 +329,7 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
   return (
     <Card>
       <CardContent className="grid gap-5">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <div className={`grid grid-cols-2 gap-4 ${stats.length > 5 ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-5"}`}>
           {stats.map((s) => (
             <div key={s.label} className="grid gap-0.5">
               <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -532,6 +536,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                             </span>
                           )}
                           {followUpNote(r) && <span className="text-xs text-muted-foreground">{followUpNote(r)}</span>}
+                          {r.deals && <DealsLine deals={r.deals} />}
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{r.mailbox_email ?? "—"}</TableCell>
@@ -543,7 +548,7 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                             : "—"}
                       </TableCell>
                       <TableCell className="max-w-72 truncate pr-4 text-muted-foreground">
-                        {r.skip_reason ? (SKIP_REASONS[r.skip_reason] ?? r.skip_reason) : (r.error ?? r.smtp_response ?? "")}
+                        {r.skip_reason ? skipReason(r.status, r.skip_reason) : (r.error ?? r.smtp_response ?? "")}
                       </TableCell>
                     </TableRow>
                   ))
@@ -567,7 +572,8 @@ function Recipients({ campaign }: { campaign: Campaign }) {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 text-sm">
-                {open.skip_reason && <p>{SKIP_REASONS[open.skip_reason] ?? open.skip_reason}</p>}
+                {open.skip_reason && <p>{skipReason(open.status, open.skip_reason)}</p>}
+                {open.deals && <DealsLine deals={open.deals} />}
                 {open.error && <p className="text-destructive">{open.error}</p>}
                 {open.smtp_response && (
                   <p className="text-muted-foreground">
@@ -646,6 +652,27 @@ function Recipients({ campaign }: { campaign: Campaign }) {
 }
 
 /** One short line about a person's replies and follow-ups, for the recipients table. */
+/** "In Deals: Proposal · Open in Deals", or the Won value. */
+function DealsLine({ deals }: { deals: NonNullable<Recipient["deals"]> }) {
+  if (deals.status === "queued") return <span className="text-xs text-muted-foreground">Being handed to Deals…</span>;
+  if (deals.status === "failed") return <span className="text-xs text-destructive">Couldn&apos;t hand over to Deals</span>;
+  if (deals.status === "blocked") return <span className="text-xs text-muted-foreground">Opted out in Deals</span>;
+  return (
+    <span className="text-xs text-muted-foreground">
+      In Deals: {dealsStage(deals.stage)}
+      {deals.stage === "won" && deals.value_usd != null && ` (${usd(deals.value_usd)})`}
+      {deals.lead_url && (
+        <>
+          {" · "}
+          <a href={deals.lead_url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
+            Open in Deals
+          </a>
+        </>
+      )}
+    </span>
+  );
+}
+
 function followUpNote(r: Recipient): string | null {
   if (r.replied_at) return r.follow_up_stop === "opted_out" ? "Replied: asked to stop" : `Replied ${formatRelative(r.replied_at)}`;
   if (r.follow_up_stop === "bounced") return "Bounced";
