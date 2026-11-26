@@ -73,8 +73,7 @@ export const NAV: NavGroup[] = [
         title: "Replies",
         href: "/replies",
         icon: InboxIcon,
-        description: "Replies detected across all campaigns.",
-        milestone: 8,
+        description: "What people wrote back to your campaigns. Read and answer them.",
       },
       {
         title: "Reports",
@@ -97,15 +96,13 @@ export const NAV: NavGroup[] = [
         title: "Warm-up",
         href: "/warmup",
         icon: FlameIcon,
-        description: "Warm-up status and helper accounts.",
-        milestone: 9,
+        description: "Ramp-up, warm-up with helper accounts, and each mailbox's inbox rate.",
       },
       {
         title: "Deliverability",
         href: "/deliverability",
         icon: GaugeIcon,
         description: "Health checks, alerts, server logs and placement tests.",
-        milestone: 10,
       },
       {
         title: "Do not contact",

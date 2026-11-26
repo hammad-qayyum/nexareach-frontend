@@ -1,26 +1,54 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, XIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  DownloadIcon,
+  SearchIcon,
+  SlidersHorizontalIcon,
+  TriangleAlertIcon,
+  XIcon,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Fragment, useState } from "react";
+import { Fragment, type ReactNode, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { MultiSelect } from "@/components/multi-select";
+import { SearchableSelect } from "@/components/searchable-select";
 import { QueryError } from "@/components/query-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, unwrap } from "@/lib/api/client";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { isAdmin, useCurrentUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { actionOptions, exportUrl, PAGE_SIZE, readFilters, toApiQuery, writeFilters, type UrlFilters } from "./filters";
+import {
+  actionOptions,
+  activeCount,
+  type DoneBy,
+  exportUrl,
+  NO_FILTERS,
+  PAGE_SIZE,
+  RANGES,
+  type Range,
+  readFilters,
+  toApiQuery,
+  type UrlFilters,
+  writeFilters,
+} from "./filters";
 import { LogDetails } from "./log-details";
 
-const ALL = "__all__";
+const DONE_BY: { value: DoneBy; label: string; hint: string }[] = [
+  { value: "", label: "Anyone", hint: "People and the system" },
+  { value: "USER", label: "People", hint: "Someone on the team" },
+  { value: "SYSTEM", label: "System", hint: "Automatic sending, checks, alerts" },
+];
 
 export function LogsView() {
   const me = useCurrentUser();
@@ -28,6 +56,8 @@ export function LogsView() {
   const pathname = usePathname();
   const filters = readFilters(useSearchParams());
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const admin = isAdmin(me.role);
 
   const query = toApiQuery(filters);
   const logs = useQuery({
@@ -42,10 +72,11 @@ export function LogsView() {
   });
   const actions = useQuery({ queryKey: ["logs", "actions"], queryFn: () => unwrap(api.GET("/api/logs/actions")) });
   // Only admins can list users, so only they get the "who" filter.
-  const users = useQuery({
-    queryKey: ["users"],
-    queryFn: () => unwrap(api.GET("/api/users")),
-    enabled: isAdmin(me.role),
+  const users = useQuery({ queryKey: ["users"], queryFn: () => unwrap(api.GET("/api/users")), enabled: admin });
+  const campaigns = useQuery({ queryKey: ["campaigns"], queryFn: () => unwrap(api.GET("/api/campaigns")) });
+  const mailboxes = useQuery({
+    queryKey: ["mailboxes", "with-archived"],
+    queryFn: () => unwrap(api.GET("/api/mailboxes", { params: { query: { include_archived: true } } })),
   });
 
   function update(changes: Partial<UrlFilters>) {
@@ -53,12 +84,128 @@ export function LogsView() {
     router.replace(`${pathname}${writeFilters({ ...filters, page: 1, ...changes })}`, { scroll: false });
   }
 
-  const hasFilters = Boolean(
-    filters.action || filters.actor || filters.entityType || filters.entityId || filters.from || filters.to,
-  );
+  // The search box updates the list as you type, a moment after you stop.
+  const [draft, setDraft] = useState(filters.q);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const typeSearch = (value: string) => {
+    setDraft(value);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      // Read the URL afresh: other filters may have changed while typing.
+      const current = readFilters(new URLSearchParams(window.location.search));
+      router.replace(`${pathname}${writeFilters({ ...current, page: 1, q: value })}`, { scroll: false });
+    }, 350);
+  };
+  const clearSearch = () => {
+    clearTimeout(timer.current);
+    setDraft("");
+  };
+  const clearAll = () => {
+    clearSearch();
+    update({ ...NO_FILTERS });
+  };
+  const removeFilter = (changes: Partial<UrlFilters>) => {
+    if ("q" in changes) clearSearch();
+    update(changes);
+  };
+
+  const actionOpts = actionOptions(actions.data ?? []);
+  const userOpts = (users.data ?? []).map((u) => ({ value: String(u.id), label: u.name, hint: u.email }));
+  const campaignOpts = (campaigns.data ?? []).map((c) => ({ value: String(c.id), label: c.name }));
+  const mailboxOpts = (mailboxes.data ?? []).map((m) => ({
+    value: String(m.id),
+    label: m.email,
+    hint: m.archived_at ? "archived" : undefined,
+  }));
+  const nameOf = (opts: { value: string; label: string }[], v: string) => opts.find((o) => o.value === v)?.label ?? `#${v}`;
+
+  const count = activeCount(filters);
+  const moreCount = count - (filters.q.trim() ? 1 : 0) - filters.actions.length - (filters.range ? 1 : 0);
   const total = logs.data?.total ?? 0;
   const firstRow = total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
   const lastRow = Math.min(filters.page * PAGE_SIZE, total);
+
+  // One removable chip per active filter value.
+  const chips: { key: string; label: ReactNode; remove: Partial<UrlFilters> }[] = [
+    ...(filters.q.trim()
+      ? [{ key: "q", label: <>Search: &ldquo;{filters.q.trim()}&rdquo;</>, remove: { q: "" } }]
+      : []),
+    ...filters.actions.map((a) => ({
+      key: `a-${a}`,
+      label: <>Action: {nameOf(actionOpts, a)}</>,
+      remove: { actions: filters.actions.filter((x) => x !== a) },
+    })),
+    ...(filters.range && (filters.range !== "custom" || filters.from || filters.to)
+      ? [
+          {
+            key: "range",
+            label:
+              filters.range === "custom"
+                ? `${filters.from ? formatDate(filters.from) : "Start"} – ${filters.to ? formatDate(filters.to) : "now"}`
+                : RANGES.find((r) => r.value === filters.range)?.label,
+            remove: { range: "" as const, from: "", to: "" },
+          },
+        ]
+      : []),
+    ...filters.campaigns.map((c) => ({
+      key: `c-${c}`,
+      label: <>Campaign: {nameOf(campaignOpts, c)}</>,
+      remove: { campaigns: filters.campaigns.filter((x) => x !== c) },
+    })),
+    ...filters.mailboxes.map((m) => ({
+      key: `m-${m}`,
+      label: <>Mailbox: {nameOf(mailboxOpts, m)}</>,
+      remove: { mailboxes: filters.mailboxes.filter((x) => x !== m) },
+    })),
+    ...filters.actors.map((u) => ({
+      key: `u-${u}`,
+      label: <>User: {nameOf(userOpts, u)}</>,
+      remove: { actors: filters.actors.filter((x) => x !== u) },
+    })),
+    ...(filters.by
+      ? [{ key: "by", label: `Done by: ${DONE_BY.find((d) => d.value === filters.by)?.label}`, remove: { by: "" as const } }]
+      : []),
+    ...(filters.problems ? [{ key: "problems", label: "Problems only", remove: { problems: false } }] : []),
+    ...(filters.entityType || filters.entityId
+      ? [
+          {
+            key: "item",
+            label: (
+              <>
+                Item: {filters.entityType || "item"}
+                {filters.entityId && <span className="font-mono"> #{filters.entityId}</span>}
+              </>
+            ),
+            remove: { entityType: "", entityId: "" },
+          },
+        ]
+      : []),
+  ];
+
+  const dateFields = (
+    <div className="flex flex-wrap items-end gap-3">
+      <FilterField label="From" id="filter-from">
+        <Input
+          id="filter-from"
+          type="date"
+          className="w-40"
+          value={filters.from}
+          max={filters.to || undefined}
+          onChange={(e) => update({ range: "custom", from: e.target.value })}
+        />
+      </FilterField>
+      <FilterField label="To" id="filter-to">
+        <Input
+          id="filter-to"
+          type="date"
+          className="w-40"
+          value={filters.to}
+          min={filters.from || undefined}
+          onChange={(e) => update({ range: "custom", to: e.target.value })}
+        />
+      </FilterField>
+    </div>
+  );
 
   return (
     <div className="grid gap-6">
@@ -75,85 +222,186 @@ export function LogsView() {
         }
       />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <FilterField label="Action" id="filter-action">
-          <Select value={filters.action || ALL} onValueChange={(v) => update({ action: v === ALL ? "" : v })}>
-            <SelectTrigger id="filter-action" className="w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All actions</SelectItem>
-              <SelectSeparator />
-              {actionOptions(actions.data ?? []).map((o) => (
-                <SelectItem key={o.value} value={o.value} className={cn(!o.value.endsWith(".") && "font-mono text-xs")}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterField>
-
-        {isAdmin(me.role) && (
-          <FilterField label="User" id="filter-actor">
-            <Select value={filters.actor || ALL} onValueChange={(v) => update({ actor: v === ALL ? "" : v })}>
-              <SelectTrigger id="filter-actor" className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Anyone</SelectItem>
-                <SelectSeparator />
-                {users.data?.map((u) => (
-                  <SelectItem key={u.id} value={String(u.id)}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FilterField>
-        )}
-
-        <FilterField label="From" id="filter-from">
-          <Input
-            id="filter-from"
-            type="date"
-            className="w-40"
-            value={filters.from}
-            max={filters.to || undefined}
-            onChange={(e) => update({ from: e.target.value })}
+      <div className="grid gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="relative w-full sm:w-72">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={draft}
+              onChange={(e) => typeSearch(e.target.value)}
+              placeholder="Search email, subject, mailbox, IP…"
+              aria-label="Search the activity log"
+              className="pl-8"
+            />
+          </div>
+          <MultiSelect
+            id="filter-action"
+            label="Action"
+            className="w-52"
+            noun="actions"
+            allLabel="All actions"
+            values={filters.actions}
+            onChange={(v) => update({ actions: v })}
+            options={actionOpts}
           />
-        </FilterField>
-        <FilterField label="To" id="filter-to">
-          <Input
-            id="filter-to"
-            type="date"
+          <SearchableSelect
+            id="filter-range"
+            label="When"
             className="w-40"
-            value={filters.to}
-            min={filters.from || undefined}
-            onChange={(e) => update({ to: e.target.value })}
+            value={filters.range || "any"}
+            onValueChange={(v) => update({ range: (v === "any" ? "" : v) as Range, from: "", to: "" })}
+            options={RANGES.map((r) => ({ value: r.value || "any", label: r.label }))}
           />
-        </FilterField>
-
-        {(filters.entityType || filters.entityId) && (
-          <Badge variant="secondary" className="h-8 gap-1 pr-1 font-normal">
-            {filters.entityType || "item"}
-            {filters.entityId && <span className="font-mono">#{filters.entityId}</span>}
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Clear item filter"
-              onClick={() => update({ entityType: "", entityId: "" })}
-            >
-              <XIcon />
-            </Button>
-          </Badge>
-        )}
-
-        {hasFilters && (
-          <Button variant="ghost" onClick={() => update({ action: "", actor: "", entityType: "", entityId: "", from: "", to: "" })}>
-            Clear filters
+          {filters.range === "custom" && dateFields}
+          <Button
+            variant={filters.problems ? "secondary" : "outline"}
+            aria-pressed={filters.problems}
+            onClick={() => update({ problems: !filters.problems })}
+          >
+            <TriangleAlertIcon data-icon="inline-start" /> Problems only
           </Button>
+          <Button variant="outline" onClick={() => setMoreOpen(true)} className="sm:ml-auto">
+            <SlidersHorizontalIcon data-icon="inline-start" /> More filters
+            {moreCount > 0 && (
+              <Badge className="ml-0.5 h-5 min-w-5 rounded-full px-1.5 tabular-nums">{moreCount}</Badge>
+            )}
+          </Button>
+        </div>
+
+        {chips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
+            {chips.map((c) => (
+              <Badge key={c.key} variant="secondary" className="h-7 max-w-full gap-1 pr-1 font-normal">
+                <span className="min-w-0 truncate">{c.label}</span>
+                <Button variant="ghost" size="icon-xs" aria-label="Remove this filter" onClick={() => removeFilter(c.remove)}>
+                  <XIcon />
+                </Button>
+              </Badge>
+            ))}
+            <Button variant="ghost" size="sm" onClick={clearAll}>
+              Clear all
+            </Button>
+          </div>
         )}
       </div>
+
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="right" className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+          <SheetHeader className="border-b">
+            <SheetTitle>Filters</SheetTitle>
+            <SheetDescription>
+              Pick as many as you like. Within a filter any ticked choice matches; different filters must all match.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="grid content-start gap-5 overflow-y-auto p-4">
+            <FilterField label="Search" id="sheet-search">
+              <Input
+                id="sheet-search"
+                type="search"
+                value={draft}
+                onChange={(e) => typeSearch(e.target.value)}
+                placeholder="Email, subject, mailbox, IP…"
+              />
+            </FilterField>
+            <FilterField label="Action" id="sheet-action">
+              <MultiSelect
+                id="sheet-action"
+                className="w-full"
+                noun="actions"
+                allLabel="All actions"
+                values={filters.actions}
+                onChange={(v) => update({ actions: v })}
+                options={actionOpts}
+              />
+            </FilterField>
+            <FilterField label="Campaign" id="sheet-campaign">
+              <MultiSelect
+                id="sheet-campaign"
+                className="w-full"
+                noun="campaigns"
+                allLabel="All campaigns"
+                values={filters.campaigns}
+                onChange={(v) => update({ campaigns: v })}
+                options={campaignOpts}
+              />
+            </FilterField>
+            <FilterField label="Mailbox" id="sheet-mailbox">
+              <MultiSelect
+                id="sheet-mailbox"
+                className="w-full"
+                noun="mailboxes"
+                allLabel="All mailboxes"
+                values={filters.mailboxes}
+                onChange={(v) => update({ mailboxes: v })}
+                options={mailboxOpts}
+              />
+            </FilterField>
+            <fieldset className="min-w-0">
+              <legend className="mb-1.5 text-xs text-muted-foreground">Done by</legend>
+              <div className="grid grid-cols-3 gap-1.5">
+                {DONE_BY.map((d) => (
+                  <Button
+                    key={d.value || "any"}
+                    type="button"
+                    size="sm"
+                    variant={filters.by === d.value ? "default" : "outline"}
+                    aria-pressed={filters.by === d.value}
+                    title={d.hint}
+                    onClick={() => update({ by: d.value })}
+                  >
+                    {d.label}
+                  </Button>
+                ))}
+              </div>
+            </fieldset>
+            {admin && (
+              <FilterField label="User" id="sheet-user">
+                <MultiSelect
+                  id="sheet-user"
+                  className="w-full"
+                  noun="people"
+                  allLabel="Anyone"
+                  values={filters.actors}
+                  onChange={(v) => update({ actors: v })}
+                  options={userOpts}
+                />
+              </FilterField>
+            )}
+            <FilterField label="When" id="sheet-range">
+              <SearchableSelect
+                id="sheet-range"
+                className="w-full"
+                value={filters.range || "any"}
+                onValueChange={(v) => update({ range: (v === "any" ? "" : v) as Range, from: "", to: "" })}
+                options={RANGES.map((r) => ({ value: r.value || "any", label: r.label }))}
+              />
+            </FilterField>
+            {filters.range === "custom" && dateFields}
+            <Label className="flex items-start gap-2 font-normal">
+              <Checkbox
+                className="mt-0.5"
+                checked={filters.problems}
+                onCheckedChange={(on) => update({ problems: on === true })}
+              />
+              <span className="grid gap-0.5">
+                <span>Problems only</span>
+                <span className="text-xs text-muted-foreground">
+                  Failed sends, bounces, delays, login failures, paused mailboxes and new alerts.
+                </span>
+              </span>
+            </Label>
+          </div>
+          <SheetFooter className="mt-auto flex-row justify-between border-t">
+            <Button variant="ghost" onClick={clearAll} disabled={count === 0}>
+              Clear all
+            </Button>
+            <Button onClick={() => setMoreOpen(false)}>
+              Show {logs.data ? total.toLocaleString() : "…"} {total === 1 ? "entry" : "entries"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {logs.error ? (
         <QueryError error={logs.error} onRetry={() => logs.refetch()} />
@@ -182,7 +430,7 @@ export function LogsView() {
                 ) : logs.data.items.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
-                      {hasFilters ? "No activity matches these filters." : "No activity yet."}
+                      {count > 0 ? "No activity matches these filters." : "No activity yet."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -276,7 +524,7 @@ export function LogsView() {
   );
 }
 
-function FilterField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
+function FilterField({ label, id, children }: { label: string; id: string; children: ReactNode }) {
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id} className="text-xs text-muted-foreground">
@@ -286,3 +534,4 @@ function FilterField({ label, id, children }: { label: string; id: string; child
     </div>
   );
 }
+

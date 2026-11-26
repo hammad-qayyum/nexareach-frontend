@@ -56,7 +56,7 @@ export function InviteDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInvited: (user: User, inviteUrl: string) => void;
+  onInvited: (link: InviteLink) => void;
 }) {
   const [role, setRole] = useState<Role>("MEMBER");
   const invite = useMutation({
@@ -64,7 +64,7 @@ export function InviteDialog({
       unwrap(api.POST("/api/users/invite", { body })),
     onSuccess: (data) => {
       setRole("MEMBER");
-      onInvited(data.user, data.invite_url);
+      onInvited({ user: data.user, url: data.invite_url, emailSent: data.email_sent ?? null, emailDetail: data.email_detail ?? null });
     },
   });
 
@@ -87,7 +87,10 @@ export function InviteDialog({
         >
           <DialogHeader>
             <DialogTitle>Invite a user</DialogTitle>
-            <DialogDescription>You&apos;ll get a link to send them. They choose their own password.</DialogDescription>
+            <DialogDescription>
+              They get a link to choose their own password. It&apos;s emailed to them if invite emails are set up in
+              Settings, and you can always copy it yourself.
+            </DialogDescription>
           </DialogHeader>
           <FieldGroup>
             {invite.error && (
@@ -207,11 +210,14 @@ function EditUserForm({
   );
 }
 
+/** An invite link, and whether it was emailed (null: invite emails aren't set up). */
+export type InviteLink = { user: User; url: string; emailSent: boolean | null; emailDetail: string | null };
+
 export function InviteLinkDialog({
   link,
   onOpenChange,
 }: {
-  link: { user: User; url: string } | null;
+  link: InviteLink | null;
   onOpenChange: (open: boolean) => void;
 }) {
   return (
@@ -220,11 +226,21 @@ export function InviteLinkDialog({
         {link && (
           <>
             <DialogHeader>
-              <DialogTitle>Invite link for {link.user.name}</DialogTitle>
+              <DialogTitle>{link.emailSent ? `Invite sent to ${link.user.name}` : `Invite link for ${link.user.name}`}</DialogTitle>
               <DialogDescription>
-                Send this link to {link.user.email}. It works once, expires in 7 days, and replaces any earlier link.
+                {link.emailSent
+                  ? `${link.emailDetail ?? `Emailed to ${link.user.email}.`} The link is below too, in case it doesn't arrive.`
+                  : `Send this link to ${link.user.email}.`}{" "}
+                It works once, expires in 7 days, and replaces any earlier link.
               </DialogDescription>
             </DialogHeader>
+            {link.emailSent === false && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  The invite email couldn&apos;t be sent. {link.emailDetail} Copy the link and send it yourself.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="flex min-w-0 items-center gap-1 rounded-md border bg-muted/50 p-1 pl-3">
               <code className="min-w-0 flex-1 truncate font-mono text-xs select-all">{link.url}</code>
               <CopyButton value={link.url} label="Copy link" />

@@ -5,6 +5,7 @@ import { MailIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { SearchBox, useSearch } from "@/components/long-list";
 import { QueryError } from "@/components/query-error";
 import { StatusBadge, type Tone } from "@/components/status-dot";
 import {
@@ -63,7 +64,8 @@ export function MailboxesView() {
     refetchInterval: 30_000,
   });
   const archivedCount = (mailboxes.data ?? []).filter((m) => m.archived_at).length;
-  const shown = (mailboxes.data ?? []).filter((m) => showArchived || !m.archived_at);
+  const visible = (mailboxes.data ?? []).filter((m) => showArchived || !m.archived_at);
+  const { q, setQ, found: shown } = useSearch(visible, (m) => `${m.display_name} ${m.email} ${m.smtp_host}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: MAILBOXES_QUERY_KEY });
 
   const check = useMutation({
@@ -150,11 +152,16 @@ export function MailboxesView() {
         </Empty>
       ) : (
         <div className="grid gap-3">
-          {archivedCount > 0 && (
-            <Label className="flex w-fit items-center gap-2 text-sm font-normal text-muted-foreground">
-              <Checkbox checked={showArchived} onCheckedChange={(on) => setShowArchived(on === true)} />
-              Show archived ({archivedCount})
-            </Label>
+          {(archivedCount > 0 || visible.length > 10) && (
+            <div className="flex flex-wrap items-center gap-3">
+              {visible.length > 10 && <SearchBox value={q} onChange={setQ} label="Search mailboxes" className="w-full sm:w-64" />}
+              {archivedCount > 0 && (
+                <Label className="flex w-fit items-center gap-2 text-sm font-normal text-muted-foreground">
+                  <Checkbox checked={showArchived} onCheckedChange={(on) => setShowArchived(on === true)} />
+                  Show archived ({archivedCount})
+                </Label>
+              )}
+            </div>
           )}
           <div className="overflow-hidden rounded-lg border">
             <Table>
@@ -182,11 +189,23 @@ export function MailboxesView() {
                     <TableCell className="text-muted-foreground">
                       {m.smtp_host}:{m.smtp_port} · {SECURITY_LABEL[m.smtp_security]}
                       <span className="block text-xs">
-                        {m.imap_host ? `Sent copy: ${m.sent_folder ?? `via ${m.imap_host}`}` : "No Sent copy"}
+                        {m.imap_host ? `Sent copy: ${m.sent_folder ?? `via ${m.imap_host}`}` : "No Sent copy or reply check"}
                       </span>
+                      {m.imap_host && (
+                        <span className={cn("block text-xs", m.inbox_error && "text-destructive")}>
+                          {m.inbox_error
+                            ? `Reply check failed: ${m.inbox_error}`
+                            : m.inbox_checked_at
+                              ? `Replies checked ${formatRelative(m.inbox_checked_at)}`
+                              : "Replies checked every 5 minutes while emails are out"}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="tabular-nums">
-                      {m.sent_today} / {m.daily_cap}
+                      {m.sent_today} / {m.daily_limit_today}
+                      {m.ramp_day && (
+                        <span className="block text-xs text-muted-foreground">Ramp-up day {m.ramp_day}</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {m.archived_at ? (

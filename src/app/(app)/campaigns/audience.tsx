@@ -1,5 +1,6 @@
 "use client";
 
+import { nameList } from "@/components/long-list";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
@@ -14,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type Campaign, unwrap } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { PROVIDER_LABELS } from "../leads/groups/[id]/lead-dialogs";
+import { providerLabel } from "@/lib/providers";
 
 const PAGE_SIZE = 50;
 
@@ -65,7 +66,7 @@ export function Audience({ campaign, editable }: { campaign: Campaign; editable:
   return (
     <div className="grid gap-3">
       <p className="text-sm text-muted-foreground">
-        {total.toLocaleString()} leads in {campaign.groups.map((g) => g.name).join(", ")}.{" "}
+        {total.toLocaleString()} leads in {nameList(campaign.groups.map((g) => g.name))}.{" "}
         {campaign.excluded_count > 0
           ? `${campaign.excluded_count} left out, so up to ${(total - campaign.excluded_count).toLocaleString()} will be emailed.`
           : "Everyone will be emailed unless you leave some out."}{" "}
@@ -167,7 +168,7 @@ export function Audience({ campaign, editable }: { campaign: Campaign; editable:
                     <TableCell>{l.country ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{l.timezone?.replace("_", " ") ?? "Campaign's"}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {l.email_provider ? PROVIDER_LABELS[l.email_provider] : "—"}
+                      {providerLabel(l.email_provider)}
                     </TableCell>
                     <TableCell className="pr-4">
                       {l.excluded ? <Badge variant="outline">Left out</Badge> : <span className="text-sm">Yes</span>}

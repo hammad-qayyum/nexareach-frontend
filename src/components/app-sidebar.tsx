@@ -37,6 +37,8 @@ import { api, unwrap } from "@/lib/api/client";
 import { initials } from "@/lib/format";
 import { activeNavItem, navForRole } from "@/lib/nav";
 import { ROLE_LABELS, signOut, useCurrentUser, useMe } from "@/lib/session";
+import { useAlertCount } from "@/lib/deliverability";
+import { useReplyCount } from "@/lib/replies";
 
 export function AppSidebar() {
   const user = useCurrentUser();
@@ -49,6 +51,8 @@ export function AppSidebar() {
     refetchInterval: 60_000,
   });
   const pending = duplicates.data?.pending ?? 0;
+  const unreadReplies = useReplyCount().data?.unread ?? 0;
+  const openAlerts = useAlertCount().data?.open ?? 0;
 
   return (
     <Sidebar collapsible="icon">
@@ -75,6 +79,22 @@ export function AppSidebar() {
                     {item.milestone && (
                       <SidebarMenuBadge className="text-[10px] font-normal text-muted-foreground">
                         Soon
+                      </SidebarMenuBadge>
+                    )}
+                    {item.href === "/replies" && unreadReplies > 0 && (
+                      <SidebarMenuBadge
+                        className="rounded-full bg-primary/15 px-1.5 text-xs tabular-nums"
+                        aria-label={`${unreadReplies} unread`}
+                      >
+                        {unreadReplies.toLocaleString()}
+                      </SidebarMenuBadge>
+                    )}
+                    {item.href === "/deliverability" && openAlerts > 0 && (
+                      <SidebarMenuBadge
+                        className="rounded-full bg-destructive/15 px-1.5 text-xs text-destructive tabular-nums"
+                        aria-label={`${openAlerts} new alert${openAlerts === 1 ? "" : "s"}`}
+                      >
+                        {openAlerts.toLocaleString()}
                       </SidebarMenuBadge>
                     )}
                     {item.href === "/leads/duplicates" && pending > 0 && (
@@ -158,6 +178,17 @@ function UserMenu() {
 /** Shown on a development copy, so it's never mistaken for the live app. */
 function EnvironmentBadge() {
   const environment = useMe().data?.environment;
+  if (environment === "staging") {
+    return (
+      <Badge
+        className="mt-2 w-fit bg-destructive/15 text-foreground group-data-[collapsible=icon]:hidden"
+        title="Staging copy on this computer: its own database, and emails really go out"
+      >
+        <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
+        Staging · real email
+      </Badge>
+    );
+  }
   if (environment !== "development") return null;
   return (
     <Badge

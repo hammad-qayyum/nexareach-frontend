@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
 import { useState } from "react";
+import { Limited } from "@/components/long-list";
 import { PageHeader } from "@/components/page-header";
 import { QueryError } from "@/components/query-error";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,6 +65,7 @@ export function ReportsView() {
       ) : (
         <Report data={summary.data} days={days} />
       )}
+      <DealsResults days={days} />
     </div>
   );
 }
@@ -71,8 +73,13 @@ export function ReportsView() {
 function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
   const { totals } = data;
   const tiles = [
-    { label: "Emails sent", value: totals.sent.toLocaleString() },
+    {
+      label: "Emails sent",
+      value: totals.sent.toLocaleString(),
+      note: totals.follow_ups_sent ? `Including ${totals.follow_ups_sent.toLocaleString()} follow-ups` : undefined,
+    },
     { label: "People reached", value: totals.people.toLocaleString() },
+    { label: "Replied", value: totals.replied.toLocaleString(), note: `${pct(totals.replied, totals.people)} of people reached` },
     { label: "Failed", value: totals.failed.toLocaleString(), note: `${pct(totals.failed, totals.sent + totals.failed)} of attempts` },
     { label: "Skipped", value: totals.skipped.toLocaleString(), note: "Do-not-contact or emailed recently" },
   ];
@@ -80,7 +87,7 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
 
   return (
     <>
-      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {tiles.map((t) => (
           <Card key={t.label} className="gap-1 py-4">
             <CardContent className="grid gap-1 px-4">
@@ -135,11 +142,15 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
             {data.mailboxes.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">Nothing sent in this period.</p>
             ) : (
+              <Limited items={[...data.mailboxes].sort((a, b) => b.sent + b.failed - (a.sent + a.failed))} limit={10} noun="more mailboxes" buttonClassName="mt-3 -ml-2">
+              {(mailboxes) => (
               <ul className="grid gap-4">
-                {data.mailboxes.map((m) => (
+                {mailboxes.map((m) => (
                   <li key={m.id} className="grid gap-1.5">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="truncate">{m.email}</span>
+                      <span className="min-w-0 truncate" title={m.email}>
+                        {m.email}
+                      </span>
                       <span className="shrink-0 tabular-nums">
                         <span className="font-medium">{m.sent.toLocaleString()} sent</span>
                         {m.failed > 0 && <span className="text-muted-foreground"> · {m.failed} failed</span>}
@@ -154,6 +165,8 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
                   </li>
                 ))}
               </ul>
+              )}
+              </Limited>
             )}
           </CardContent>
         </Card>
@@ -167,14 +180,18 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
             {data.campaigns.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">No campaigns in this period.</p>
             ) : (
+              <Limited items={[...data.campaigns].sort((a, b) => b.sent + b.failed - (a.sent + a.failed))} limit={10} noun="more campaigns" buttonClassName="mt-3 -ml-2">
+              {(campaigns) => (
               <ul className="grid gap-4">
-                {data.campaigns.map((c) => (
+                {campaigns.map((c) => (
                   <li key={c.id} className="grid gap-1.5">
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <Link href={`/campaigns/${c.id}`} className="truncate font-medium hover:underline">
+                      <Link href={`/campaigns/${c.id}`} className="min-w-0 truncate font-medium hover:underline" title={c.name}>
                         {c.name}
                       </Link>
-                      <CampaignStatusBadge status={c.status} />
+                      <span className="shrink-0">
+                        <CampaignStatusBadge status={c.status} />
+                      </span>
                     </div>
                     <Progress value={c.total ? (c.done / c.total) * 100 : 0} className="h-1.5" aria-label={`${c.name} progress`} />
                     <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground tabular-nums">
@@ -188,10 +205,141 @@ function Report({ data, days }: { data: Schemas["SummaryOut"]; days: number }) {
                   </li>
                 ))}
               </ul>
+              )}
+              </Limited>
             )}
           </CardContent>
         </Card>
       </div>
     </>
+  );
+}
+
+type Dimension = "campaign" | "mailbox" | "version" | "lead_list";
+const DIMENSIONS: { value: Dimension; label: string }[] = [
+  { value: "campaign", label: "By campaign" },
+  { value: "mailbox", label: "By mailbox" },
+  { value: "version", label: "By email version" },
+  { value: "lead_list", label: "By lead list" },
+];
+
+/** What cold email earned in Deals: MQLs, pipeline and Won revenue (Deals integration step 5). */
+function DealsResults({ days }: { days: number }) {
+  const [dimension, setDimension] = useState<Dimension>("campaign");
+  // Fixed when the page opens (to the hour), so the query key stays the same while it is open.
+  const [now] = useState(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    return d.getTime();
+  });
+  const dateFrom = new Date(now - days * 24 * 3600 * 1000).toISOString();
+  const report = useQuery({
+    queryKey: ["reports", "deals", dimension, days],
+    queryFn: () => unwrap(api.GET("/api/reports/deals", { params: { query: { dimension, date_from: dateFrom } } })),
+    placeholderData: keepPreviousData,
+  });
+  const exportHref = `/api/reports/deals/export?${new URLSearchParams({ dimension, date_from: dateFrom })}`;
+  const rows = report.data?.rows ?? [];
+  const t = report.data?.total;
+  if (t && t.mqls === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Deals results</CardTitle>
+          <CardDescription>
+            No replies were handed to Deals in this period. Once they are, this shows MQLs, pipeline and Won revenue
+            per campaign, mailbox, email version and lead list.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1.5">
+          <CardTitle>Deals results</CardTitle>
+          <CardDescription>
+            People handed to Deals (MQLs) and what became of them. Revenue per 1,000 emails = Won value ÷ campaign and
+            follow-up emails sent × 1,000.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={dimension} onValueChange={(v) => setDimension(v as Dimension)}>
+            <SelectTrigger className="w-44" aria-label="Break down">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DIMENSIONS.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <a href={exportHref} download className="text-sm text-primary underline-offset-4 hover:underline">
+            Export CSV
+          </a>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {report.error ? (
+          <QueryError error={report.error} onRetry={() => report.refetch()} />
+        ) : !report.data ? (
+          <Skeleton className="h-40" />
+        ) : (
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{DIMENSIONS.find((d) => d.value === dimension)?.label.replace("By ", "")}</TableHead>
+                  <TableHead className="text-right">Emails</TableHead>
+                  <TableHead className="text-right">MQLs</TableHead>
+                  <TableHead className="text-right" title="Scored 80+ / approved from review / sent by hand">
+                    Auto · approved · manual
+                  </TableHead>
+                  <TableHead className="text-right">Reached proposal</TableHead>
+                  <TableHead className="text-right">Won</TableHead>
+                  <TableHead className="text-right">Lost</TableHead>
+                  <TableHead className="text-right">Per 1,000 emails</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...rows, ...(t ? [t] : [])].map((r) => (
+                  <TableRow key={r.key} className={r.key === "total" ? "font-medium" : undefined}>
+                    <TableCell className="max-w-xs truncate" title={r.label}>
+                      {r.label}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.emails_sent.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.mqls}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.auto} · {r.approved} · {r.manual}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.reached_proposal}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.won}
+                      {r.won_usd ? ` ($${r.won_usd.toLocaleString()})` : ""}
+                    </TableCell>
+                    <TableCell
+                      className="text-right tabular-nums"
+                      title={
+                        Object.entries(r.lost_reasons)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join("\n") || undefined
+                      }
+                    >
+                      {r.lost}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.revenue_per_1000 == null ? "—" : `$${r.revenue_per_1000.toLocaleString()}`}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Pager } from "@/components/pager";
+import { SearchableSelect } from "@/components/searchable-select";
 import { QueryError } from "@/components/query-error";
 import { StatusBadge } from "@/components/status-dot";
 import {
@@ -29,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Duplicate, type DuplicateDecision, unwrap } from "@/lib/api/client";
@@ -141,28 +141,28 @@ export function DuplicatesView() {
               <TabsTrigger value="decided">Decided</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Select
+          <SearchableSelect
+            className="w-56"
+            label="Filter by group"
+            searchLabel="Search groups"
             value={groupId ? String(groupId) : ALL}
             onValueChange={(v) => {
               setGroupId(v === ALL ? null : Number(v));
               setPage(1);
               setSelected(new Set());
             }}
-          >
-            <SelectTrigger className="w-56" aria-label="Filter by group">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All groups</SelectItem>
-              <SelectSeparator />
-              {groups.data?.map((g) => (
-                <SelectItem key={g.id} value={String(g.id)}>
-                  {g.name}
-                  {g.pending_count > 0 && ` (${g.pending_count} pending)`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={[
+              { value: ALL, label: "All groups", divider: true },
+              // Groups with rows to review first.
+              ...[...(groups.data ?? [])]
+                .sort((a, b) => Number(b.pending_count > 0) - Number(a.pending_count > 0))
+                .map((g) => ({
+                  value: String(g.id),
+                  label: g.name,
+                  hint: g.pending_count > 0 ? `${g.pending_count} pending` : undefined,
+                })),
+            ]}
+          />
         </div>
 
         {editable && state === "pending" && pendingInView > 0 && (

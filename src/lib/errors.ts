@@ -7,6 +7,8 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: "That email and password don't match an active account.",
   too_many_attempts: "Too many failed attempts. Wait 15 minutes and try again.",
   invalid_code: "That code didn't work. Check your authenticator app and try again.",
+  mfa_secret_unreadable:
+    "2-step sign-in for this account needs to be set up again (its saved key no longer matches). Ask an admin to reset it on the Users page.",
   already_enabled: "2-step sign-in is already set up for this account.",
   setup_not_started: "Start the 2-step sign-in setup again.",
   not_enabled: "2-step sign-in isn't turned on for this account.",
@@ -25,6 +27,15 @@ const MESSAGES: Record<string, string> = {
   mailbox_in_active_campaign:
     "A running or paused campaign uses this mailbox. Archive it, or finish or cancel that campaign first.",
   mailbox_archived: "This mailbox is archived. Restore it first.",
+  mailbox_not_connected: "This mailbox can't sign in to its mail server. Fix it on the Mailboxes page first.",
+  no_helpers: "There's no working helper account to send the test to. Add one on the Warm-up page.",
+  placement_running: "A placement test for this mailbox is still running. Wait for it to finish.",
+  campaign_empty: "That campaign has no subject yet. Pick another, or use the sample message.",
+  alert_not_found: "That alert no longer exists.",
+  token_required: "Paste the cPanel API token.",
+  username_required: "Enter the cPanel username.",
+  password_required: "Enter the mailbox's password.",
+  imap_host_required: "Enter the incoming mail (IMAP) server, e.g. mail.fastnexa.com.",
   person_forgotten: "This person asked to be forgotten. They can't be added again.",
   person_being_emailed: "An email to this person is being sent right now. Try again in a minute.",
   person_not_found: "We hold no data about this email address.",
@@ -38,11 +49,38 @@ const MESSAGES: Record<string, string> = {
   campaign_not_editable: "Pause the campaign before changing it. The recipient list can't change once it has started.",
   campaign_not_draft: "This campaign has already been started.",
   content_missing: "Write a subject and a message first.",
+  follow_up_empty: "One of the follow-ups has no text. Write it, or remove that follow-up.",
+  recipient_not_found: "That recipient isn't part of this campaign.",
+  not_sent: "Their email hasn't been sent yet, so there's nothing to reply to.",
+  reply_not_found: "That reply no longer exists. The person may have asked to be forgotten.",
+  answer_empty: "Write your answer first.",
+  quick_reply_not_found: "That quick reply no longer exists.",
+  helper_not_found: "That helper account no longer exists.",
+  helper_exists: "That helper account has already been added.",
+  helper_is_mailbox: "That address is one of your sending mailboxes. Helpers must be other inboxes.",
+  dev_real_helper:
+    "This is the development copy, so helpers must use the test mail server on this computer (localhost), not a real one.",
+  too_many_quick_replies: "That's the most quick replies you can keep (50). Delete one first.",
   no_groups: "Choose at least one lead group.",
   no_active_mailbox: "Choose at least one active mailbox to send from.",
   dev_real_mailbox:
     "This is the development copy, so it only sends through Mailpit. Choose mailboxes that use localhost (Mailpit), not a real mail server.",
   no_mailbox: "Choose a mailbox to send from.",
+  deals_handover_off: "Handing replies to Deals is switched off (Settings → Deals).",
+  already_sent_to_deals: "This reply was already sent to Deals.",
+  reply_hard_stop: "This reply is a hard stop (they said no, or it's an opt-out), so it can't go to Deals.",
+  reply_without_campaign: "This reply isn't linked to a campaign email, so it can't go to Deals.",
+  score_thresholds_order: "The auto line must be above the review line.",
+  rule_words_required: "Add at least one word or phrase.",
+  rule_signal_unknown: "Choose a signal.",
+  rule_pattern_invalid: "That pattern can't be used.",
+  rule_not_found: "That rule no longer exists.",
+  note_required: "Say briefly why.",
+  postal_address_required:
+    "Add the postal address in Settings → Business details first: every email carries it while the opt-out line and footer are on.",
+  deals_check_failed: "Couldn't check the Deals do-not-email list. Try again in a few minutes.",
+  deals_secret_required: "Enter the Deals shared secret before switching the do-not-email list on.",
+  deals_url_invalid: "Enter the Deals address as https://… with nothing after the domain.",
   invalid_transition: "The campaign can't do that from its current state.",
   invalid_gap: "The longest gap must be at least the shortest gap.",
   invalid_hours: "The sending window must end after it starts.",
@@ -63,5 +101,8 @@ const MESSAGES: Record<string, string> = {
 };
 
 export function errorMessage(code: string): string {
+  // A few codes carry their explanation after a colon ("rule_pattern_invalid: Not a valid pattern…").
+  const [head, ...rest] = code.split(": ");
+  if (rest.length && MESSAGES[head]) return `${MESSAGES[head]} ${rest.join(": ")}`;
   return MESSAGES[code] ?? MESSAGES.unknown;
 }

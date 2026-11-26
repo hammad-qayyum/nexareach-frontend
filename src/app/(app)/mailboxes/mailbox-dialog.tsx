@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, type Mailbox, type SmtpSecurity, unwrap } from "@/lib/api/client";
 
@@ -70,6 +72,9 @@ function MailboxForm({
   const [username, setUsername] = useState(mailbox?.smtp_username ?? "");
   const [password, setPassword] = useState("");
   const [cap, setCap] = useState(String(mailbox?.daily_cap ?? 40));
+  // Ramp-up: on for a new mailbox; off means it uses its full daily cap from day one.
+  const [rampUp, setRampUp] = useState(mailbox?.ramp_up_enabled ?? true);
+  const [rampStart, setRampStart] = useState(String(mailbox?.ramp_start_limit ?? 5));
   // Sent copies: cPanel uses the same server for incoming mail, so a new mailbox mirrors the SMTP
   // server until someone types a different one.
   const [imapHost, setImapHost] = useState(mailbox ? (mailbox.imap_host ?? "") : "");
@@ -88,6 +93,8 @@ function MailboxForm({
         imap_host: effectiveImapHost.trim() || null,
         imap_port: Number(imapPort) || 993,
         daily_cap: Number(cap),
+        ramp_up_enabled: rampUp,
+        ramp_start_limit: Math.max(1, Number(rampStart) || 5),
       };
       if (mailbox) {
         return unwrap(
@@ -97,7 +104,10 @@ function MailboxForm({
           }),
         );
       }
-      return unwrap(api.POST("/api/mailboxes", { body: { ...common, email, smtp_password: password } }));
+      // Warm-up starts off; it's switched on per mailbox on the Warm-up page.
+      return unwrap(
+        api.POST("/api/mailboxes", { body: { ...common, email, smtp_password: password, warmup_enabled: false } }),
+      );
     },
     onSuccess: (m) => {
       if (m.connection && !m.connection.ok) {
@@ -250,8 +260,8 @@ function MailboxForm({
               placeholder="mail.fastnexa.com"
             />
             <FieldDescription>
-              Used to save a copy of every sent email in this mailbox&apos;s Sent folder (SSL, same username and
-              password). Leave empty to skip.
+              Used to save a copy of every sent email in the Sent folder, and to notice replies (which stop
+              follow-ups). SSL, same username and password. Leave empty to skip both.
             </FieldDescription>
           </Field>
           <Field>
@@ -279,9 +289,41 @@ function MailboxForm({
             required
           />
           <FieldDescription>
-            The most emails this mailbox sends per day across all campaigns. 40 is the safe limit for a mailbox
-            that hasn&apos;t been warmed up.
+            The most emails this mailbox sends per day across all campaigns and warm-up. 40 is the safe limit for
+            a mailbox that hasn&apos;t been warmed up.
           </FieldDescription>
+        </Field>
+        <Field>
+          <Label className="flex items-start gap-2 font-normal">
+            <Checkbox className="mt-0.5" checked={rampUp} onCheckedChange={(on) => setRampUp(on === true)} />
+            <span className="grid gap-0.5">
+              <span className="font-medium">Start slowly (ramp-up)</span>
+              <span className="text-xs text-muted-foreground">
+                For a new mailbox: it starts with a few emails a day and adds 3 every 2 working days until it reaches
+                the daily cap (about 4 weeks from 5). Turn off for a mailbox that has been sending for a while.
+                {mailbox?.ramp_up_enabled && !rampUp ? " Turning it off uses the full cap from today." : ""}
+                {mailbox && !mailbox.ramp_up_enabled && rampUp ? " Turning it on starts again from today." : ""}
+              </span>
+            </span>
+          </Label>
+          {rampUp && (
+            <div className="flex items-center gap-2 pl-6 text-sm">
+              <span>Start at</span>
+              <Input
+                id="mb-ramp-start"
+                aria-label="Emails a day at the start"
+                type="number"
+                min={1}
+                max={500}
+                value={rampStart}
+                onChange={(e) => setRampStart(e.target.value)}
+                className="h-8 w-20"
+              />
+              <span className="text-muted-foreground">
+                a day{mailbox?.ramp_day ? ` · today is day ${mailbox.ramp_day}, limit ${mailbox.daily_limit_today}` : ""}
+              </span>
+            </div>
+          )}
         </Field>
       </FieldGroup>
       <DialogFooter>
