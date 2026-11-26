@@ -2227,6 +2227,8 @@ export interface components {
              */
             created_at: string;
             counts: components["schemas"]["Counts"];
+            /** Company Holds */
+            company_holds?: components["schemas"]["CompanyHold"][];
         };
         /** CampaignRef */
         CampaignRef: {
@@ -2288,6 +2290,23 @@ export interface components {
         CodeIn: {
             /** Code */
             code: string;
+        };
+        /**
+         * CompanyHold
+         * @description Waiting people at a company that already got its emails for the day (pacing.COMPANY_DAILY_LIMIT).
+         */
+        CompanyHold: {
+            /** Domain */
+            domain: string;
+            /** Waiting */
+            waiting: number;
+            /** Limit */
+            limit: number;
+            /**
+             * Free At
+             * Format: date-time
+             */
+            free_at: string;
         };
         /** Counts */
         Counts: {
