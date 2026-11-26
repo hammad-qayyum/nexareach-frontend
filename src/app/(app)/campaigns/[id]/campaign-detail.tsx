@@ -316,6 +316,11 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
     .map((m) => new Date(m.next_send_at!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
   const problems = c.mailboxes.filter((m) => m.status !== "ACTIVE");
+  // People at a company that already got its emails for the day wait until it is free again.
+  const holds = c.company_holds ?? [];
+  const heldCount = holds.reduce((n, h) => n + h.waiting, 0);
+  const allHeld = heldCount > 0 && heldCount >= c.counts.waiting;
+  const heldUntil = holds.map((h) => h.free_at).sort()[0];
   // Sending happens in the background worker. If it stops (crash, restart, laptop asleep) nothing
   // is lost: every lead's status is in the database and sending resumes where it left off.
   const health = useQuery({
@@ -345,13 +350,23 @@ function ProgressCard({ campaign: c }: { campaign: Campaign }) {
             </span>
             {c.status === "RUNNING" && !firstEmailsDone && (
               <span>
-                {next && next > new Date()
-                  ? `Next email ${formatRelative(next.toISOString())}`
-                  : "Next email within a minute, during sending hours"}
+                {allHeld && heldUntil
+                  ? `Next email after ${formatDateTime(heldUntil)}, during sending hours`
+                  : next && next > new Date()
+                    ? `Next email ${formatRelative(next.toISOString())}`
+                    : "Next email within a minute, during sending hours"}
               </span>
             )}
             {c.finished_at && <span>Ended {formatDateTime(c.finished_at)}</span>}
           </div>
+          {holds.map((h) => (
+            <p key={h.domain} className="text-xs text-muted-foreground">
+              {h.waiting === 1 ? "1 person" : `${h.waiting.toLocaleString()} people`} at {h.domain} wait
+              {h.waiting === 1 ? "s" : ""}: that company already got {h.limit} emails in the last 24 hours (at most{" "}
+              {h.limit} a day per company, so it isn&apos;t flooded). The next one goes after{" "}
+              {formatDateTime(h.free_at)}.
+            </p>
+          ))}
           {finishEstimate(c) && (
             <p className="text-xs text-muted-foreground">
               {finishEstimate(c)} (longer if these mailboxes also send other campaigns).
